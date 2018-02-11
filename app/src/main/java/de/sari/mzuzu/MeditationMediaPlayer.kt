@@ -18,6 +18,4 @@ class MeditationMediaPlayer(musicFile: AssetFileDescriptor) : MediaPlayer() {
         seekTo(0)
         super.start()
     }
-
-
 }
