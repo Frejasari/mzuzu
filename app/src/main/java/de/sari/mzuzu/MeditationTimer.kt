@@ -1,5 +1,6 @@
 package de.sari.mzuzu
 
+import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -19,6 +20,7 @@ interface AbstractTimer {
     fun snooze(duration: Int)
     fun getSecondsRemaining(): Int
     fun getTotalTime(): Int
+    fun getSetTime(): Int
 }
 
 enum class TimerState {
@@ -29,7 +31,6 @@ data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingSe
 
 
 class MeditationTimer : AbstractTimer {
-
     private var meditationTime: Int = 300
     private var secondsPassed: Int = 0
     private var addedSeconds: Int = 0
@@ -52,17 +53,22 @@ class MeditationTimer : AbstractTimer {
     private lateinit var timeEmitter: ObservableEmitter<Int> //Emitter gehoert zum Observable
     private val timeObservable: Observable<Int> = Observable.create<Int> { emitter -> timeEmitter = emitter }
     private var timerDisposable: Disposable? = null
-    override val timeSubject: BehaviorSubject<Int> = BehaviorSubject.create<Int>().apply { timeObservable.subscribe(this) }
+    override val timeSubject: BehaviorSubject<Int> = BehaviorSubject.create<Int>().apply {
+        timeObservable.subscribe(this)
+    }
 
     private lateinit var onStateChangeEmitter: ObservableEmitter<TimerState>
     private val stateObservable = Observable.create<TimerState> { emitter -> onStateChangeEmitter = emitter }
-    override val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.create<TimerState>().apply { stateObservable.subscribe(this) }
+    override val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.create<TimerState>().apply {
+        stateObservable.subscribe(this)
+    }
 
     override val timerDataObservable = Observables.combineLatest(stateSubject, timeSubject) { timerState, remainingSeconds ->
         TimerData(timerState, remainingSeconds)
     }
 
     private fun start() {
+        if (state == TimerState.COMPLETED || state == TimerState.STOPPED) resetTimer()
         state = TimerState.RUNNING
         initTime()
         if (!timerRunning()) {
@@ -90,13 +96,15 @@ class MeditationTimer : AbstractTimer {
 
     private fun onCompleted() {
         state = TimerState.COMPLETED
-        resetTimer()
+//        resetTimer()
     }
 
     override fun snooze(duration: Int) {
         addedSeconds += duration
         if (state != TimerState.PAUSED) {
-            state = TimerState.RUNNING
+//            state = TimerState.RUNNING TODO Why not call start() instead of setting the timerState?
+            start()
+            Log.i("Snooze", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
         }
         initTime()
     }
@@ -109,8 +117,10 @@ class MeditationTimer : AbstractTimer {
 
     override fun getSecondsRemaining() = getTotalTime().minus(secondsPassed)
 
+    override fun getSetTime(): Int = meditationTime
+
     private fun resetTimer() {
-        setDuration(0)
+//        setDuration(0) TODO Do we need this?
         secondsPassed = 0
         addedSeconds = 0
         initTime()

@@ -32,7 +32,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/playButton"
         app:layout_constraintTop_toTopOf="@+id/playButton"
-        app:srcCompat="@drawable/ic_exposure_plus_2"/>
+        app:srcCompat="@drawable/ic_add_2"/>
 
     <ImageButton
         android:id="@+id/playButton"
@@ -47,7 +47,7 @@
         app:layout_constraintStart_toEndOf="@+id/stopButton"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.81"
-        app:srcCompat="@drawable/ic_play_arrow"/>
+        app:srcCompat="@drawable/ic_play"/>
 
     <ImageButton
         android:id="@+id/stopButton"

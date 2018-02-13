@@ -17,6 +17,8 @@ fun ImageButton.setImageDrawable(id: Int) {
     setImageDrawable(ContextCompat.getDrawable(this.context, id))
 }
 
+const val SELECTED_TIME = "Time Picker selected Time"
+
 class MainActivity : AppCompatActivity() {
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
@@ -27,6 +29,7 @@ class MainActivity : AppCompatActivity() {
             binder = iBinder as MeditationTimerService.Binder
             timeDisposable = getTimer()!!.timeSubject.subscribe { onTimerTick(it) }
             stateDisposable = getTimer()!!.stateSubject.subscribe { synchronizeInterface(it) }
+
         }
 
         override fun onServiceDisconnected(className: ComponentName) {
@@ -38,13 +41,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         timePicker.maxValue = 120
         timePicker.minValue = 5
+        savedInstanceState?.apply {
+            if (containsKey(SELECTED_TIME)) timePicker.value = getInt(SELECTED_TIME)
+        }
 
         playButton.setOnClickListener {
             getTimer()!!.setDuration(timePicker.value)
             getTimer()!!.toggleTimer()
         }
-
-        timePicker.setOnValueChangedListener { picker, oldVal, selectedMinutes -> getTimer()?.setDuration(selectedMinutes) }
+//        timePicker.setOnValueChangedListener { picker, oldVal, selectedMinutes -> getTimer()?.setDuration(selectedMinutes) }
 
         plusButton.setOnClickListener {
             getTimer()?.snooze(10)
@@ -69,6 +74,11 @@ class MainActivity : AppCompatActivity() {
         unbindService(serviceConnection)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(SELECTED_TIME, timePicker.value)
+    }
+
     fun getTimer() = binder?.getTimer()
 
     private fun onTimerTick(timeRemaining: Int) {
@@ -83,11 +93,11 @@ class MainActivity : AppCompatActivity() {
             setImageDrawable(when (state) {
                 TimerState.RUNNING -> R.drawable.ic_pause
                 TimerState.COMPLETED -> R.drawable.ic_replay
-                else -> R.drawable.ic_play_arrow
+                else -> R.drawable.ic_play
             })
         }
         plusButton.isEnabled = (state != TimerState.STOPPED)
-        timePicker.isEnabled = state == TimerState.STOPPED
+        timePicker.isEnabled = (state == TimerState.STOPPED || state == TimerState.COMPLETED)
         stopButton.isEnabled = (state != TimerState.STOPPED)
     }
 }
