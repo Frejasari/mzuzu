@@ -101,9 +101,8 @@ class MeditationTimer : AbstractTimer {
 
     override fun snooze(duration: Int) {
         addedSeconds += duration
-        if (state != TimerState.PAUSED) {
-//            state = TimerState.RUNNING TODO Why not call start() instead of setting the timerState?
-            start()
+        if (state != TimerState.PAUSED && state != TimerState.STOPPED) {
+            state = TimerState.RUNNING
             Log.i("Snooze", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
         }
         initTime()
