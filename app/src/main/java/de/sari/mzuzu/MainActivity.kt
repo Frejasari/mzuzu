@@ -79,10 +79,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun synchronizeInterface(state: TimerState) {
-        when (state) {
-            TimerState.RUNNING -> playButton.setImageDrawable(R.drawable.ic_pause)
-            else -> playButton.setImageDrawable(R.drawable.ic_play_arrow)
+        with(playButton) {
+            setImageDrawable(when (state) {
+                TimerState.RUNNING -> R.drawable.ic_pause
+                TimerState.COMPLETED -> R.drawable.ic_replay
+                else -> R.drawable.ic_play_arrow
+            })
         }
+        plusButton.isEnabled = (state != TimerState.STOPPED)
         timePicker.isEnabled = state == TimerState.STOPPED
         stopButton.isEnabled = (state != TimerState.STOPPED)
     }

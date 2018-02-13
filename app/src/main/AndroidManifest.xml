@@ -21,6 +21,7 @@
         </activity>
         <service android:name=".MeditationTimerService">
         </service>
+        <service android:name=".NotificationIntentService" />
     </application>
 
 </manifest>
