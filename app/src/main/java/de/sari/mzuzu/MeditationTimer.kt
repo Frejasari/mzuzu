@@ -3,6 +3,7 @@ package de.sari.mzuzu
 import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
@@ -40,6 +41,8 @@ class MeditationTimer : AbstractTimer {
             field = value
             onStateChangeEmitter.onNext(value)
         }
+
+//    private val single = Single<Int>
 
     private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
             .observeOn(AndroidSchedulers.mainThread())

@@ -1,9 +1,12 @@
 package de.sari.mzuzu
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
@@ -20,14 +23,19 @@ class MeditationTimerService : Service() {
     private var timerDataDisposable: Disposable? = null
     private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
+
     inner class Binder : android.os.Binder() {
         fun getTimer() = timer
     }
 
+    @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
         mediaPlayer = MeditationMediaPlayer(music)
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val onCompletedChannel = NotificationChannel(CHANNEL_ID_COMPLETED, "Alert for Completion", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(onCompletedChannel)
+        }
         val timerDataObservable = Observables
                 .combineLatest(timer.stateSubject, timer.timeSubject
 //                        .filter { timeRemaining -> timeRemaining % 60 == 0 }

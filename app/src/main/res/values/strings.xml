@@ -3,4 +3,11 @@
 
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="action_stop">stop</string>
+    <string name="action_pause">pause</string>
+    <string name="action_add">add 2</string>
+    <string name="action_play">play</string>
+    <string name="notification_start_meditation">Start meditating?</string>
+    <string name="notification_meditate_again">Meditate again?</string>
+    <string name="notification_remaining_time">remaining time %d minutes </string>
 </resources>
