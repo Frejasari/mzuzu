@@ -22,6 +22,7 @@ interface AbstractTimer {
     fun getSecondsRemaining(): Int
     fun getTotalTime(): Int
     fun getSetTime(): Int
+    fun getMeditationTime(): Single<Int>
 }
 
 enum class TimerState {
@@ -32,7 +33,7 @@ data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingSe
 
 
 class MeditationTimer : AbstractTimer {
-    private var meditationTime: Int = 300
+    private var meditationTime: Int = 5
     private var secondsPassed: Int = 0
     private var addedSeconds: Int = 0
 
@@ -41,8 +42,6 @@ class MeditationTimer : AbstractTimer {
             field = value
             onStateChangeEmitter.onNext(value)
         }
-
-//    private val single = Single<Int>
 
     private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
             .observeOn(AndroidSchedulers.mainThread())
@@ -102,8 +101,8 @@ class MeditationTimer : AbstractTimer {
 //        resetTimer()
     }
 
-    override fun snooze(duration: Int) {
-        addedSeconds += duration
+    override fun snooze(seconds: Int) {
+        addedSeconds += seconds
         if (state != TimerState.PAUSED && state != TimerState.STOPPED) {
             state = TimerState.RUNNING
             Log.i("Snooze", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
@@ -121,8 +120,9 @@ class MeditationTimer : AbstractTimer {
 
     override fun getSetTime(): Int = meditationTime
 
+    override fun getMeditationTime(): Single<Int> = Single.create { emitter -> emitter.onSuccess(meditationTime) }
+
     private fun resetTimer() {
-//        setDuration(0) TODO Do we need this?
         secondsPassed = 0
         addedSeconds = 0
         initTime()

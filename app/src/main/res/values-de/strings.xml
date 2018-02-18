@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_pause">Pausiere Meditation</string>
+    <string name="action_play">Starte Meditation</string>
+    <string name="notification_start_meditation">Meditation starten?</string>
+    <string name="notification_meditate_again">Nochmal?</string>
+    <string name="notification_remaining_time">Etwa %d Minuten verbleibend</string>
+    <string name="add_2_minutes">2 Minuten dazu</string>
+    <string name="start_or_pause_meditation">Starte oder pausiere Meditation</string>
+    <string name="stop_meditation">Stoppe Meditation</string>
+</resources>

@@ -1,11 +1,26 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:colorBackground">@color/colorPrimary</item>
+        <item name="android:textColorPrimary">@color/colorAccentPrimary</item>
+        <item name="android:textColorSecondary">@color/colorAccent</item>
+        <item name="actionMenuTextColor">@color/colorAccentPrimary</item>
+        <item name="android:textSize">18sp</item>
+        <!--<item name="actionOverflowButtonStyle">@style/ActionButtonOverflowStyle</item>-->
+        <!--<item name="drawerArrowStyle">@style/DrawerArrowStyle</item>-->
+
+        <item name="mnpSeparatorColor">@color/colorAccentPrimary</item>
+        <item name="mnpTextColor">@color/colorAccentPrimary</item>
+        <item name="mnpTextSize">18sp</item>
+        <!--<item name="activit"-->
+    </style>
+
+    <style name="MeditationProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
     </style>
 
 </resources>
