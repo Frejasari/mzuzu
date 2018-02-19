@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Mzuzu</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" tools:ignore="MissingTranslation">Mzuzu</string>
     <string name="action_pause">Pause meditation</string>
     <string name="action_play">Start meditation</string>
     <string name="notification_start_meditation">Start meditation?</string>
