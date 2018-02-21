@@ -35,12 +35,12 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
+        android:contentDescription="@string/add_2_minutes"
         app:layout_constraintBottom_toBottomOf="@+id/playButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/playButton"
         app:layout_constraintTop_toTopOf="@+id/playButton"
-        app:srcCompat="@drawable/ic_add_2"
-        android:contentDescription="@string/add_2_minutes"/>
+        app:srcCompat="@drawable/ic_add_2"/>
 
     <ImageButton
         android:id="@+id/playButton"
@@ -51,14 +51,14 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="80dp"
+        android:contentDescription="@string/start_or_pause_meditation"
         app:layout_constraintBottom_toTopOf="@+id/timeBar"
         app:layout_constraintEnd_toStartOf="@+id/plusButton"
         app:layout_constraintStart_toEndOf="@+id/stopButton"
         app:layout_constraintTop_toBottomOf="@+id/timePicker"
         app:layout_constraintVertical_bias="0.76"
         app:layout_constraintVertical_chainStyle="packed"
-        app:srcCompat="@drawable/ic_play"
-        android:contentDescription="@string/start_or_pause_meditation"/>
+        app:srcCompat="@drawable/ic_play"/>
 
     <ImageButton
         android:id="@+id/stopButton"
@@ -66,13 +66,13 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
+        android:contentDescription="@string/stop_meditation"
         app:layout_constraintBottom_toBottomOf="@+id/playButton"
         app:layout_constraintEnd_toStartOf="@+id/playButton"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/playButton"
-        app:srcCompat="@drawable/ic_stop"
-        android:contentDescription="@string/stop_meditation"/>
+        app:srcCompat="@drawable/ic_stop"/>
 
     <ProgressBar
         android:id="@+id/timeBar"

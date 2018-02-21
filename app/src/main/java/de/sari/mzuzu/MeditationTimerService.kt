@@ -7,6 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import de.sari.commons.AbstractTimer
+import de.sari.commons.MeditationTimer
+import de.sari.commons.TimerData
+import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
 

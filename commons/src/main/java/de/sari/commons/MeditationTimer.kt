@@ -1,4 +1,4 @@
-package de.sari.mzuzu
+package de.sari.commons
 
 import android.util.Log
 import io.reactivex.Observable

@@ -10,6 +10,7 @@ import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.PRIORITY_MAX
 import android.support.v4.media.app.NotificationCompat.MediaStyle
 import android.util.Log
+import de.sari.commons.TimerState
 
 const val ACTION_ADD = "Action add"
 const val ACTION_PAUSE = "Action pause"

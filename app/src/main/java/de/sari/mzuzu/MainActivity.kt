@@ -7,6 +7,7 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.ImageButton
+import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
 
