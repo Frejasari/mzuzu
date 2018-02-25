@@ -71,7 +71,7 @@ class MeditationTimerService : Service() {
 
     private fun updateNotification(state: TimerState, remainingSeconds: Int) {
         val notification = MeditationNotification.getNotification(state, TimeUtils.toMinutes(remainingSeconds), this, notificationManager)
-        if (state == TimerState.STOPPED) {
+        if (state == TimerState.STOPPED || state == TimerState.PAUSED) {
             stopForeground(false)
             notificationManager.notify(NOTIFICATION_ID, notification)
         } else {

@@ -1,11 +1,15 @@
 package de.sari.mzuzu
 
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
@@ -104,7 +108,13 @@ class MainActivity : AppCompatActivity() {
             if (state == TimerState.STOPPED) subtitle = null
             if (state == TimerState.COMPLETED) subtitle = getString(R.string.notification_meditate_again)
         }
-
+        if (state == TimerState.STOPPED) {
+            plusButton.visibility = View.INVISIBLE
+            stopButton.visibility = View.INVISIBLE
+        } else {
+            plusButton.visibility = View.VISIBLE
+            stopButton.visibility = View.VISIBLE
+        }
         plusButton.isEnabled = (state != TimerState.STOPPED)
         timePicker.isEnabled = (state == TimerState.STOPPED || state == TimerState.COMPLETED)
         stopButton.isEnabled = (state != TimerState.STOPPED)

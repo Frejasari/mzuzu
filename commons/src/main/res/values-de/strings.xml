@@ -8,4 +8,7 @@
     <string name="add_2_minutes">2 Minuten dazu</string>
     <string name="start_or_pause_meditation">Starte oder pausiere Meditation</string>
     <string name="stop_meditation">Stop</string>
+    <string name="notification_channel_name_ongoing">Meditations Timer</string>
+    <string name="notification_channel_name_completed">Meditation Abgeschlossen</string>
+    <string name="notification_running_state">Meditieren</string>
 </resources>
