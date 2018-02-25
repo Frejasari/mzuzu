@@ -49,6 +49,7 @@ class MeditationTimer : AbstractTimer {
             .map { it.toInt() }
             .map {
                 secondsPassed++
+                Log.i("service", "timerObservable remaining seconds ${getSecondsRemaining()}")
                 getSecondsRemaining()
             }
 

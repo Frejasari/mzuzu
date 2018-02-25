@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val intent = Intent(this, MeditationTimerService::class.java)
+        val intent = getMeditationTimerServiceIntent(this)
         startService(intent)
         bindService(intent, serviceConnection, Context.BIND_ABOVE_CLIENT)
     }

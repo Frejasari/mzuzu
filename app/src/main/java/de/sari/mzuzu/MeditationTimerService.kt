@@ -6,7 +6,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import android.util.Log
+import android.support.v4.content.ContextCompat
 import de.sari.commons.AbstractTimer
 import de.sari.commons.MeditationTimer
 import de.sari.commons.TimerData
@@ -15,6 +15,8 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
 
 const val NOTIFICATION_ID = 8890
+
+fun getMeditationTimerServiceIntent(context: Context) = Intent(context, MeditationTimerService::class.java)
 
 class MeditationTimerService : Service() {
 
@@ -31,6 +33,7 @@ class MeditationTimerService : Service() {
     @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
+
         mediaPlayer = MeditationMediaPlayer(music)
         val timerDataObservable = Observables
                 .combineLatest(timer.stateSubject, timer.timeSubject
@@ -39,27 +42,13 @@ class MeditationTimerService : Service() {
                 }
 
         timerDataDisposable = timerDataObservable.subscribe { timerData ->
-            Log.i("Notification", "TimerDataDisposable onNext called: state: ${timerData.state}")
+            //            Log.i("service", "TimerDataDisposable onNext called: state: ${timerData.state}, remaining seconds: ${timerData.remainingSeconds}")
             when (timerData.state) {
                 TimerState.COMPLETED -> mediaPlayer.start()
                 else -> mediaPlayer.pause()
             }
             updateNotification(timerData.state, timerData.remainingSeconds)
         }
-    }
-
-    private fun updateNotification(state: TimerState, remainingSeconds: Int) {
-        val notification = MeditationNotification.getNotification(state, TimeUtils.toMinutes(remainingSeconds), this)
-        if (state == TimerState.STOPPED) {
-            stopForeground(false)
-            notificationManager.notify(NOTIFICATION_ID, notification)
-        } else startForeground(NOTIFICATION_ID, notification)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        timerDataDisposable?.dispose()
-        mediaPlayer.release()
     }
 
     // A client is binding to the service with bindService()
@@ -73,9 +62,25 @@ class MeditationTimerService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun updateTimer(intent: Intent) {
-        Log.i("Notification", "Update Timer called, action: $intent.action")
+    override fun onDestroy() {
+        super.onDestroy()
+        notificationManager.cancel(NOTIFICATION_ID)
+        timerDataDisposable?.dispose()
+        mediaPlayer.release()
+    }
 
+    private fun updateNotification(state: TimerState, remainingSeconds: Int) {
+        val notification = MeditationNotification.getNotification(state, TimeUtils.toMinutes(remainingSeconds), this, notificationManager)
+        if (state == TimerState.STOPPED) {
+            stopForeground(false)
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        } else {
+            ContextCompat.startForegroundService(this, getMeditationTimerServiceIntent(this))
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun updateTimer(intent: Intent) {
         when (intent.action) {
             ACTION_PLAY -> {
                 timer.toggleTimer()
