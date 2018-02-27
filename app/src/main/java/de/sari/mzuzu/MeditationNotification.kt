@@ -14,7 +14,6 @@ import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.PRIORITY_MAX
 import android.support.v4.content.ContextCompat
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.app.NotificationCompat.MediaStyle
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
@@ -104,13 +103,14 @@ object MeditationNotification {
                 .setSmallIcon(R.drawable.ic_launcher_bw)
                 .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
                 .setOngoing(true)
+                .setShowWhen(false)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setOnlyAlertOnce(true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentIntent(pendingIntent)
                 .setStyle(MediaStyle()
                         .setShowActionsInCompactView(0, 1, 2)
-//                        .setMediaSession(createMediaSession(context).sessionToken)
+                        .setMediaSession(createMediaSession(context).sessionToken)
                 )
     }
 
@@ -142,11 +142,11 @@ object MeditationNotification {
     private fun createMediaSession(context: Context): MediaSessionCompat {
         val uri = Uri.parse("android.resource://de.sari.mzuzu/drawable/ic_launcher_bw")//Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.resources.getResourcePackageName(R.mipmap.ic_launcher) + '/' + context.resources.getResourceTypeName(R.mipmap.ic_launcher) + '/' + String.valueOf(R.drawable.ic_launcher ) );
         return MediaSessionCompat(context, MEDIA_SESSION_ID).apply {
-            setMetadata(MediaMetadataCompat.Builder()
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
-                            BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
-//                    .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri.toString())
-                    .build())
+            //            setMetadata(MediaMetadataCompat.Builder()
+////                    .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
+////                            BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+////                    .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri.toString())
+//                    .build())
         }
     }
 }
