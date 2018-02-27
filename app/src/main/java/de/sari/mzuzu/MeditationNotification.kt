@@ -118,7 +118,6 @@ object MeditationNotification {
     private fun createMeditatingChannel(context: Context, notificationManager: NotificationManager) {
         val channel = NotificationChannel(CHANNEL_ID_MEDITATING, context.getString(R.string.notification_channel_name_ongoing),
                 NotificationManager.IMPORTANCE_LOW)
-        // Configure the notification channel.
         channel.description = ""
         channel.enableLights(false)
         channel.enableVibration(false)
@@ -131,7 +130,6 @@ object MeditationNotification {
     private fun createCompletedChannel(context: Context, notificationManager: NotificationManager) {
         val channel = NotificationChannel(CHANNEL_ID_COMPLETED, context.getString(R.string.notification_channel_name_completed),
                 NotificationManager.IMPORTANCE_HIGH)
-        // Configure the notification channel.
         channel.description = ""
         channel.setShowBadge(false)
         channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC

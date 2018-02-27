@@ -44,18 +44,20 @@ class MeditationTimerService : Service() {
         mediaPlayer = MeditationMediaPlayer(music)
 
         val timerDataObservable = Observables
-                .combineLatest(timer.stateSubject, timer.timeSubject
+                .combineLatest(timer.stateObservable(), timer.timeObservable().filter { remainingMinutes ->
+                    remainingMinutes % 60 == 0
+                }
                 ) { timerState, remainingSeconds ->
                     TimerData(timerState, remainingSeconds)
                 }
 
-        timeSelectedDisposable = timer.timeSelectedObservable.subscribe { seconds ->
+        timeSelectedDisposable = timer.timeSelectedObservable().subscribe { seconds ->
             Log.i("sync", "timeSelectedDisposable $seconds s")
             sharedPreferences.edit().putInt(MEDITATION_TIME, seconds).apply()
         }
 
         timerDataDisposable = timerDataObservable.subscribe { timerData ->
-            //            Log.i("service", "TimerDataDisposable onNext called: state: ${timerData.state}, remaining seconds: ${timerData.remainingSeconds}")
+            Log.i("sync", "TimerDataDisposable onNext called: state: ${timerData.state}, remaining seconds: ${timerData.remainingSeconds}")
             when (timerData.state) {
                 TimerState.COMPLETED -> mediaPlayer.start()
                 else -> mediaPlayer.pause()

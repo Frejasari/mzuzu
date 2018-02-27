@@ -2,20 +2,20 @@ package de.sari.commons
 
 import android.util.Log
 import io.reactivex.Observable
-import io.reactivex.ObservableEmitter
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
 
 interface AbstractTimer {
-    val stateSubject: BehaviorSubject<TimerState>
-    val timeSubject: BehaviorSubject<Int>
-    val timerDataObservable: Observable<TimerData>
-    val timeSelectedObservable: Observable<Int>
+    fun stateObservable(): Observable<TimerState>
+    fun timeObservable(): Observable<Int>
+    fun timerDataObservable(): Observable<TimerData>
+    fun timeSelectedObservable(): Observable<Int>
     fun toggleTimer()
     fun stop()
     fun setDuration(seconds: Int)
@@ -34,6 +34,7 @@ data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingSe
 
 
 class MeditationTimer : AbstractTimer {
+
     private var meditationTime: Int = 5
     private var secondsPassed: Int = 0
     private var addedSeconds: Int = 0
@@ -41,11 +42,12 @@ class MeditationTimer : AbstractTimer {
     private var state = TimerState.STOPPED
         set(value) {
             field = value
-            onStateChangeEmitter.onNext(value)
+            stateSubject.onNext(value)
         }
 
-    private var timeSelectedEmitter: ObservableEmitter<Int>? = null //Emitter gehoert zum Observable
-    override val timeSelectedObservable: Observable<Int> = Observable.create { emitter -> timeSelectedEmitter = emitter }
+    private val timeSelectedObservable: PublishSubject<Int> = PublishSubject.create<Int>()
+
+    override fun timeSelectedObservable() = timeSelectedObservable
 
     private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
             .observeOn(AndroidSchedulers.mainThread())
@@ -57,22 +59,18 @@ class MeditationTimer : AbstractTimer {
                 getSecondsRemaining()
             }
 
-    private lateinit var timeEmitter: ObservableEmitter<Int> //Emitter gehoert zum Observable
-    private val timeObservable: Observable<Int> = Observable.create<Int> { emitter -> timeEmitter = emitter }
     private var timerDisposable: Disposable? = null
-    override val timeSubject: BehaviorSubject<Int> = BehaviorSubject.create<Int>().apply {
-        timeObservable.subscribe(this)
-    }
+    private val timeSubject: BehaviorSubject<Int> = BehaviorSubject.create<Int>()
+    override fun timeObservable() = timeSubject
 
-    private lateinit var onStateChangeEmitter: ObservableEmitter<TimerState>
-    private val stateObservable = Observable.create<TimerState> { emitter -> onStateChangeEmitter = emitter }
-    override val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.createDefault<TimerState>(TimerState.STOPPED).apply {
-        stateObservable.subscribe(this)
-    }
+    private val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.createDefault<TimerState>(TimerState.STOPPED)
+    override fun stateObservable() = stateSubject
 
-    override val timerDataObservable = Observables.combineLatest(stateSubject, timeSubject) { timerState, remainingSeconds ->
+    private val timerDataObservable = Observables.combineLatest(stateSubject, timeSubject) { timerState, remainingSeconds ->
         TimerData(timerState, remainingSeconds)
     }
+
+    override fun timerDataObservable() = timerDataObservable
 
     private fun start() {
         if (state == TimerState.COMPLETED || state == TimerState.STOPPED) resetTimer()
@@ -80,7 +78,7 @@ class MeditationTimer : AbstractTimer {
         initTime()
         if (!timerRunning()) {
             timerDisposable = timerObservable.subscribe { remainingSeconds ->
-                timeEmitter.onNext(remainingSeconds)
+                timeSubject.onNext(remainingSeconds)
                 if (remainingSeconds <= 0) onCompleted()
             }
         }
@@ -118,7 +116,7 @@ class MeditationTimer : AbstractTimer {
     override fun setDuration(seconds: Int) {
         Log.i("sync", "setDuration called duration $seconds")
         meditationTime = seconds
-        timeSelectedEmitter?.onNext(seconds)
+        timeSelectedObservable.onNext(seconds)
     }
 
     override fun getTotalTime() = meditationTime.plus(addedSeconds)
@@ -136,7 +134,7 @@ class MeditationTimer : AbstractTimer {
     }
 
     private fun initTime() {
-        timeEmitter.onNext(getSecondsRemaining())
+        timeSubject.onNext(getSecondsRemaining())
     }
 
     private fun timerRunning() = timerDisposable != null && !timerDisposable!!.isDisposed

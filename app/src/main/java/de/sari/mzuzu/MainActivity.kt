@@ -3,7 +3,6 @@ package de.sari.mzuzu
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
@@ -36,8 +35,8 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
             // We've bound to LocalService, cast the IBinder and get LocalServices instance
             Log.i("sync", "onServiceConnected called")
             binder = iBinder as MeditationTimerService.Binder
-            timeDisposable = getTimer()!!.timeSubject.subscribe { onTimerTick(it) }
-            stateDisposable = getTimer()!!.stateSubject.subscribe { synchronizeInterface(it) }
+            timeDisposable = getTimer()!!.timeObservable().subscribe { onTimerTick(it) }
+            stateDisposable = getTimer()!!.stateObservable().subscribe { synchronizeInterface(it) }
         }
 
         override fun onServiceDisconnected(className: ComponentName) {

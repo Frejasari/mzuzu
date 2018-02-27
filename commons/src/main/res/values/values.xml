@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="snooze_duration">10</integer>
+    <integer name="snooze_duration">120</integer>
 </resources>
