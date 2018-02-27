@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.ImageButton
+import android.widget.NumberPicker
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
@@ -22,14 +23,18 @@ fun ImageButton.setImageDrawable(id: Int) {
 const val MEDITATION_TIMER_SETTINGS = "de.sari.mzuzu.meditation.timer.settings.exit.com"
 const val MEDITATION_TIME = "de.sari.mzuzu.meditation.time.exit.com"
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var exitPunktCom: SharedPreferences
+class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
+
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
     private val serviceConnection = object : ServiceConnection {
+//         onServiceConntected is always called when the activity binds to the service
+//         in comparision onBind is only called the first time a client binds to the service
+//          - the service connection channel is cached and the system returns the same binder to any further clients
         override fun onServiceConnected(className: ComponentName, iBinder: IBinder) {
             // We've bound to LocalService, cast the IBinder and get LocalServices instance
+            Log.i("sync", "onServiceConnected called")
             binder = iBinder as MeditationTimerService.Binder
             timeDisposable = getTimer()!!.timeSubject.subscribe { onTimerTick(it) }
             stateDisposable = getTimer()!!.stateSubject.subscribe { synchronizeInterface(it) }
@@ -42,21 +47,16 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        exitPunktCom = getSharedPreferences(MEDITATION_TIMER_SETTINGS, Context.MODE_PRIVATE)
 
         timePicker.maxValue = 120
         timePicker.minValue = 1
-        timePicker.value = (exitPunktCom.getInt(MEDITATION_TIME, 300)) / 60
         setSupportActionBar(toolbar)
 
         playButton.setOnClickListener {
-            val time = timePicker.value * 60
-//            exitPunktCom.edit().putInt(MEDITATION_TIME, time).apply()
-            getTimer()!!.setDuration(time)
             getTimer()!!.toggleTimer()
         }
 
-        timePicker.setOnValueChangedListener { picker, oldVal, selectedMinutes -> getTimer()?.setDuration(selectedMinutes * 60) }
+        timePicker.setOnValueChangedListener(this)
 
         plusButton.setOnClickListener {
             getTimer()?.snooze(resources.getInteger(R.integer.snooze_duration))
@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        Log.i("sync", "onStart activity called")
         val intent = getMeditationTimerServiceIntent(this)
         startService(intent)
         bindService(intent, serviceConnection, Context.BIND_ABOVE_CLIENT)
@@ -81,9 +82,8 @@ class MainActivity : AppCompatActivity() {
         unbindService(serviceConnection)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        exitPunktCom.edit().putInt(MEDITATION_TIME, timePicker.value * 60).apply()
+    override fun onValueChange(picker: NumberPicker?, oldVal: Int, selectedMinutes: Int) {
+        getTimer()?.setDuration(TimeUtils.toSeconds(selectedMinutes))
     }
 
     fun getTimer() = binder?.getTimer()
@@ -92,11 +92,11 @@ class MainActivity : AppCompatActivity() {
         val totalTime = getTimer()!!.getTotalTime()
         timeBar.max = totalTime
         timeBar.progress = secondsRemaining
-        toolbar.subtitle = getString(R.string.notification_remaining_time, TimeUtils.toMinutes(secondsRemaining))
-        Log.i("timertick", "time remaining: $secondsRemaining")
+        timePicker.value = TimeUtils.toMinutes(secondsRemaining)
     }
 
     private fun synchronizeInterface(state: TimerState) {
+        Log.i("sync", "synchronizeInterface called, state: $state")
         with(playButton) {
             setImageDrawable(when (state) {
                 TimerState.RUNNING -> R.drawable.ic_pause
@@ -104,19 +104,38 @@ class MainActivity : AppCompatActivity() {
                 else -> R.drawable.ic_play
             })
         }
+        with(plusButton) {
+            isEnabled = (state != TimerState.STOPPED)
+            visibility = when (state) {
+                TimerState.STOPPED -> View.INVISIBLE
+                else -> View.VISIBLE
+            }
+        }
+        with(stopButton) {
+            isEnabled = (state != TimerState.STOPPED)
+            visibility = when (state) {
+                TimerState.STOPPED -> View.INVISIBLE
+                else -> View.VISIBLE
+            }
+        }
         with(toolbar) {
-            if (state == TimerState.STOPPED) subtitle = null
-            if (state == TimerState.COMPLETED) subtitle = getString(R.string.notification_meditate_again)
+            subtitle = when (state) {
+                TimerState.RUNNING -> getString(R.string.notification_running_state)
+                TimerState.PAUSED -> getString(R.string.notification_paused_state)
+                TimerState.STOPPED -> getString(R.string.notification_stopped_state)
+                TimerState.COMPLETED -> getString(R.string.notification_meditate_again)
+            }
         }
-        if (state == TimerState.STOPPED) {
-            plusButton.visibility = View.INVISIBLE
-            stopButton.visibility = View.INVISIBLE
-        } else {
-            plusButton.visibility = View.VISIBLE
-            stopButton.visibility = View.VISIBLE
+        timePicker.also {
+            it.isEnabled = (state == TimerState.STOPPED || state == TimerState.COMPLETED)
+            when (state) {
+                TimerState.RUNNING -> it.setOnValueChangedListener(null)
+                TimerState.PAUSED -> it.setOnValueChangedListener(null)
+                else -> {
+                    it.value = TimeUtils.toMinutes(getTimer()?.getSetTime()!!)
+                    it.setOnValueChangedListener(this)
+                }
+            }
         }
-        plusButton.isEnabled = (state != TimerState.STOPPED)
-        timePicker.isEnabled = (state == TimerState.STOPPED || state == TimerState.COMPLETED)
-        stopButton.isEnabled = (state != TimerState.STOPPED)
     }
 }

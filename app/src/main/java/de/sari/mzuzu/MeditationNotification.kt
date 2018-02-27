@@ -49,6 +49,7 @@ object MeditationNotification {
                 }
                 TimerState.PAUSED -> {
                     notificationBuilder
+                            .setContentTitle(context.getString(R.string.notification_paused_state))
                             .setContentText(context.getString(R.string.notification_remaining_time, remainingMinutes))
                             .addAction(R.drawable.ic_stop, context.getString(R.string.stop_meditation), getActionIntent(context, ACTION_STOP))
                             .addAction(R.drawable.ic_play, context.getString(R.string.action_play), getActionIntent(context, ACTION_PLAY))
@@ -58,7 +59,7 @@ object MeditationNotification {
                 }
                 TimerState.STOPPED -> {
                     notificationBuilder
-                            .setContentText(context.getString(R.string.notification_start_meditation))
+                            .setContentTitle(context.getString(R.string.notification_stopped_state))
                             .addAction(0, context.getString(R.string.stop_meditation), getActionIntent(context, ACTION_ENABLE))
                             .addAction(R.drawable.ic_play, context.getString(R.string.action_play), getActionIntent(context, ACTION_PLAY))
                             .addAction(0, context.getString(R.string.add_2_minutes), getActionIntent(context, ACTION_ENABLE))
@@ -70,6 +71,7 @@ object MeditationNotification {
                         createCompletedChannel(context, notificationManager)
                     }
                     notificationBuilder
+                            .setContentTitle(context.getString(R.string.notification_completed_state))
                             .setContentText(context.getString(R.string.notification_meditate_again))
                             .addAction(R.drawable.ic_stop, context.getString(R.string.stop_meditation), getActionIntent(context, ACTION_STOP))
                             .addAction(R.drawable.ic_replay, context.getString(R.string.action_play), getActionIntent(context, ACTION_REPEAT))
@@ -97,7 +99,7 @@ object MeditationNotification {
             createMeditatingChannel(context, notificationManager)
         }
         return NotificationCompat.Builder(context, CHANNEL_ID_MEDITATING)
-                .setContentTitle("Start Meditating?")
+                .setContentTitle("")
                 .setContentText("")
                 .setSmallIcon(R.drawable.ic_launcher_bw)
                 .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
@@ -108,7 +110,7 @@ object MeditationNotification {
                 .setContentIntent(pendingIntent)
                 .setStyle(MediaStyle()
                         .setShowActionsInCompactView(0, 1, 2)
-                        .setMediaSession(createMediaSession(context).sessionToken)
+//                        .setMediaSession(createMediaSession(context).sessionToken)
                 )
     }
 
@@ -138,11 +140,11 @@ object MeditationNotification {
 
 
     private fun createMediaSession(context: Context): MediaSessionCompat {
-        val uri = Uri.parse("android.resource://de.sari.mzuzu/drawable/ic_launcher_bw")//Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.resources.getResourcePackageName(R.mipmap.ic_launcher) + '/' + context.resources.getResourceTypeName(R.mipmap.ic_launcher) + '/' + context.resources.getResourceEntryName(R.mipmap.ic_launcher) );
+        val uri = Uri.parse("android.resource://de.sari.mzuzu/drawable/ic_launcher_bw")//Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.resources.getResourcePackageName(R.mipmap.ic_launcher) + '/' + context.resources.getResourceTypeName(R.mipmap.ic_launcher) + '/' + String.valueOf(R.drawable.ic_launcher ) );
         return MediaSessionCompat(context, MEDIA_SESSION_ID).apply {
             setMetadata(MediaMetadataCompat.Builder()
-//                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
-//                            BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON,
+                            BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
 //                    .putString(MediaMetadataCompat.METADATA_KEY_ART_URI, uri.toString())
                     .build())
         }

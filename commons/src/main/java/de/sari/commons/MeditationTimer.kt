@@ -15,10 +15,11 @@ interface AbstractTimer {
     val stateSubject: BehaviorSubject<TimerState>
     val timeSubject: BehaviorSubject<Int>
     val timerDataObservable: Observable<TimerData>
+    val timeSelectedObservable: Observable<Int>
     fun toggleTimer()
     fun stop()
-    fun setDuration(duration: Int)
-    fun snooze(duration: Int)
+    fun setDuration(seconds: Int)
+    fun snooze(seconds: Int)
     fun getSecondsRemaining(): Int
     fun getTotalTime(): Int
     fun getSetTime(): Int
@@ -43,13 +44,16 @@ class MeditationTimer : AbstractTimer {
             onStateChangeEmitter.onNext(value)
         }
 
+    private var timeSelectedEmitter: ObservableEmitter<Int>? = null //Emitter gehoert zum Observable
+    override val timeSelectedObservable: Observable<Int> = Observable.create { emitter -> timeSelectedEmitter = emitter }
+
     private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .filter { state == TimerState.RUNNING }
             .map { it.toInt() }
             .map {
                 secondsPassed++
-                Log.i("service", "timerObservable remaining seconds ${getSecondsRemaining()}")
+                Log.i("sync", "timerObservable remaining seconds ${getSecondsRemaining()}")
                 getSecondsRemaining()
             }
 
@@ -62,7 +66,7 @@ class MeditationTimer : AbstractTimer {
 
     private lateinit var onStateChangeEmitter: ObservableEmitter<TimerState>
     private val stateObservable = Observable.create<TimerState> { emitter -> onStateChangeEmitter = emitter }
-    override val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.create<TimerState>().apply {
+    override val stateSubject: BehaviorSubject<TimerState> = BehaviorSubject.createDefault<TimerState>(TimerState.STOPPED).apply {
         stateObservable.subscribe(this)
     }
 
@@ -106,13 +110,15 @@ class MeditationTimer : AbstractTimer {
         addedSeconds += seconds
         if (state != TimerState.PAUSED && state != TimerState.STOPPED) {
             state = TimerState.RUNNING
-            Log.i("Snooze", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
+            Log.i("sync", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
         }
         initTime()
     }
 
-    override fun setDuration(duration: Int) {
-        meditationTime = duration
+    override fun setDuration(seconds: Int) {
+        Log.i("sync", "setDuration called duration $seconds")
+        meditationTime = seconds
+        timeSelectedEmitter?.onNext(seconds)
     }
 
     override fun getTotalTime() = meditationTime.plus(addedSeconds)

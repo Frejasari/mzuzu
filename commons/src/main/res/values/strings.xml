@@ -11,4 +11,7 @@
     <string name="notification_channel_name_ongoing">Meditation Timer</string>
     <string name="notification_channel_name_completed">Meditation Completed</string>
     <string name="notification_running_state">Meditating</string>
+    <string name="notification_paused_state">Paused</string>
+    <string name="notification_stopped_state">Start meditation?</string>
+    <string name="notification_completed_state">Meditation completed</string>
 </resources>
