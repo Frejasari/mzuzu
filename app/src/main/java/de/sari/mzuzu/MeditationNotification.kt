@@ -84,7 +84,7 @@ object MeditationNotification {
     }
 
     private fun getActionIntent(context: Context, action: String): PendingIntent {
-        val intent = Intent(context, MeditationTimerService::class.java).apply {
+        val intent = getMeditationTimerServiceIntent(context).apply {
             this.action = action
         }
         return PendingIntent.getService(context, 22, intent, FLAG_UPDATE_CURRENT)

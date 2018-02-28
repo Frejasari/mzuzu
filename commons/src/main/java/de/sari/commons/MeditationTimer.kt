@@ -8,6 +8,8 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
+import org.threeten.bp.Duration
+import org.threeten.bp.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 
@@ -22,7 +24,7 @@ interface AbstractTimer {
     fun snooze(seconds: Int)
     fun getSecondsRemaining(): Int
     fun getTotalTime(): Int
-    fun getSetTime(): Int
+    fun getTimerDuration(): Int
     fun getMeditationTime(): Single<Int>
 }
 
@@ -36,8 +38,11 @@ data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingSe
 class MeditationTimer : AbstractTimer {
 
     private var meditationTime: Int = 5
-    private var secondsPassed: Int = 0
     private var addedSeconds: Int = 0
+    private var startTime: LocalDateTime? = null
+    private var pauseStartTime: LocalDateTime? = null
+    private var pauseEndTime: LocalDateTime? = null
+    private var pausedSeconds: Int = 0
 
     private var state = TimerState.STOPPED
         set(value) {
@@ -52,9 +57,7 @@ class MeditationTimer : AbstractTimer {
     private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .filter { state == TimerState.RUNNING }
-            .map { it.toInt() }
             .map {
-                secondsPassed++
                 Log.i("sync", "timerObservable remaining seconds ${getSecondsRemaining()}")
                 getSecondsRemaining()
             }
@@ -73,7 +76,8 @@ class MeditationTimer : AbstractTimer {
     override fun timerDataObservable() = timerDataObservable
 
     private fun start() {
-        if (state == TimerState.COMPLETED || state == TimerState.STOPPED) resetTimer()
+        if (state == TimerState.COMPLETED || state == TimerState.STOPPED) startTimerFromStoppedState()
+        if (state == TimerState.PAUSED) startTimerFromPausedState()
         state = TimerState.RUNNING
         initTime()
         if (!timerRunning()) {
@@ -85,6 +89,7 @@ class MeditationTimer : AbstractTimer {
     }
 
     private fun pause() {
+        pauseTimer()
         state = TimerState.PAUSED
     }
 
@@ -108,7 +113,7 @@ class MeditationTimer : AbstractTimer {
         addedSeconds += seconds
         if (state != TimerState.PAUSED && state != TimerState.STOPPED) {
             state = TimerState.RUNNING
-            Log.i("sync", "seconds Passed $secondsPassed, meditation Tme $meditationTime, added Seconds $addedSeconds")
+            Log.i("sync", "seconds Passed ${passedSeconds()}, meditation Time $meditationTime, added Seconds $addedSeconds")
         }
         initTime()
     }
@@ -121,16 +126,32 @@ class MeditationTimer : AbstractTimer {
 
     override fun getTotalTime() = meditationTime.plus(addedSeconds)
 
-    override fun getSecondsRemaining() = getTotalTime().minus(secondsPassed)
+    override fun getSecondsRemaining() = getTotalTime().plus(pausedSeconds).minus(passedSeconds())
 
-    override fun getSetTime(): Int = meditationTime
+    override fun getTimerDuration(): Int = meditationTime
 
     override fun getMeditationTime(): Single<Int> = Single.create { emitter -> emitter.onSuccess(meditationTime) }
 
     private fun resetTimer() {
-        secondsPassed = 0
+        pausedSeconds = 0
         addedSeconds = 0
         initTime()
+    }
+
+    private fun passedSeconds() = Duration.between(startTime, LocalDateTime.now()).seconds.toInt()
+
+    private fun startTimerFromStoppedState() {
+        startTime = LocalDateTime.now()
+        resetTimer()
+    }
+
+    private fun startTimerFromPausedState() {
+        pauseEndTime = LocalDateTime.now()
+        pausedSeconds += Duration.between(pauseStartTime, pauseEndTime).seconds.toInt()
+    }
+
+    private fun pauseTimer() {
+        pauseStartTime = LocalDateTime.now()
     }
 
     private fun initTime() {

@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
                 TimerState.RUNNING -> it.setOnValueChangedListener(null)
                 TimerState.PAUSED -> it.setOnValueChangedListener(null)
                 else -> {
-                    it.value = TimeUtils.toMinutes(getTimer()?.getSetTime()!!)
+                    it.value = TimeUtils.toMinutes(getTimer()?.getTimerDuration()!!)
                     it.setOnValueChangedListener(this)
                 }
             }
