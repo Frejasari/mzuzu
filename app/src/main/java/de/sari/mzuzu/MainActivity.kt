@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
     private val serviceConnection = object : ServiceConnection {
-//         onServiceConntected is always called when the activity binds to the service
+        //         onServiceConntected is always called when the activity binds to the service
 //         in comparision onBind is only called the first time a client binds to the service
 //          - the service connection channel is cached and the system returns the same binder to any further clients
         override fun onServiceConnected(className: ComponentName, iBinder: IBinder) {
@@ -96,6 +96,9 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
 
     private fun synchronizeInterface(state: TimerState) {
         Log.i("sync", "synchronizeInterface called, state: $state")
+        with(timeBar) {
+            if (state == TimerState.STOPPED) timeBar.progress = getTimer()!!.getTotalTime()
+        }
         with(playButton) {
             setImageDrawable(when (state) {
                 TimerState.RUNNING -> R.drawable.ic_pause

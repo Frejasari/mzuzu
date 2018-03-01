@@ -12,6 +12,7 @@ class StartMusicJob : Job() {
         fun schedule(seconds: Int) {
             JobRequest.Builder(TAG)
                     .setExact(TimeUtils.toMillis(seconds))
+                    .setUpdateCurrent(true)
                     .build()
                     .schedule()
         }

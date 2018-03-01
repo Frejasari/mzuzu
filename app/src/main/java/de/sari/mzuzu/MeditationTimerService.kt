@@ -39,18 +39,15 @@ class MeditationTimerService : Service() {
     @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
-        Log.i("sync", "onCreate service called")
         sharedPreferences = getSharedPreferences(MEDITATION_TIMER_SETTINGS, Context.MODE_PRIVATE)
         timer.setDuration(sharedPreferences.getInt(MEDITATION_TIME, 300))
         mediaPlayer = MeditationMediaPlayer(music)
 
         timeSelectedDisposable = timer.timeSelectedObservable().subscribe { seconds ->
-            Log.i("sync", "timeSelectedDisposable $seconds s")
             sharedPreferences.edit().putInt(MEDITATION_TIME, seconds).apply()
         }
 
-        timerDataDisposable = timer.timerDataSecondsObservable().subscribe { timerData ->
-            Log.i("sync", "TimerDataDisposable onNext called: state: ${timerData.state}, remaining seconds: ${timerData.remainingSeconds}")
+        timerDataDisposable = timer.timerDataObservable().subscribe { timerData ->
             when (timerData.state) {
                 TimerState.COMPLETED -> mediaPlayer.start()
                 else -> mediaPlayer.pause()
@@ -59,11 +56,7 @@ class MeditationTimerService : Service() {
         }
 
         scheduleJobDisposable = timer.snoozeObservable().mergeWith(timer.timerDataStateObservable())
-                .subscribe { timerData ->
-                    Log.i("observables", "scheduleJobDisposable for scheduleMusic onNext called, timerState: " +
-                            "${timerData.state}, remainingSeconds: ${timerData.remainingSeconds}")
-                    scheduleMusicJob(timerData)
-                }
+                .subscribe { timerData -> scheduleMusicJob(timerData) }
     }
 
     // A client is binding to the service with bindService()
@@ -72,7 +65,6 @@ class MeditationTimerService : Service() {
 // The system then delivers that same IBinder to all additional clients that bind to that same service,
 // without calling onBind() again.
     override fun onBind(intent: Intent?): IBinder {
-        Log.i("sync", "onBind called")
         return Binder()
     }
 
@@ -123,18 +115,9 @@ class MeditationTimerService : Service() {
     }
 
     private fun scheduleMusicJob(timerData: TimerData) {
-        Log.i("sync", " scheduleMusicJob called for $timerData.remainingSeconds")
-
         when (timerData.state) {
-            TimerState.RUNNING -> {
-                Log.i("sync", "StartMusicJob scheduled for $timerData.remainingSeconds")
-                JobManager.instance().cancelAllForTag(StartMusicJob.TAG)
-                StartMusicJob.schedule(timerData.remainingSeconds)
-            }
-            else -> {
-                Log.i("sync", "StartMusicJob canceled")
-                JobManager.instance().cancelAllForTag(StartMusicJob.TAG)
-            }
+            TimerState.RUNNING -> StartMusicJob.schedule(timerData.remainingSeconds)
+            else -> JobManager.instance().cancelAllForTag(StartMusicJob.TAG)
         }
     }
 }

@@ -6,6 +6,7 @@ import com.evernote.android.job.JobCreator
 
 
 class MeditationJobCreator : JobCreator {
+
     override fun create(tag: String): Job? {
         return when (tag) {
             StartMusicJob.TAG -> {
