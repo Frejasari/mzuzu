@@ -97,7 +97,11 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     private fun synchronizeInterface(state: TimerState) {
         Log.i("sync", "synchronizeInterface called, state: $state")
         with(timeBar) {
-            if (state == TimerState.STOPPED) timeBar.progress = getTimer()!!.getTotalTime()
+            if (state == TimerState.STOPPED) {
+                val timerDuration = getTimer()!!.getTimerDuration()
+                timeBar.progress = timerDuration
+                timeBar.max = timerDuration
+            }
         }
         with(playButton) {
             setImageDrawable(when (state) {
