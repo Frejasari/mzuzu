@@ -24,15 +24,15 @@ interface AbstractTimer {
     fun timerDataObservable(): Observable<TimerData>
     fun timeSelectedObservable(): Observable<Int>
     fun snoozeObservable(): Observable<TimerData>
+    fun timerDataStateObservable(): Observable<TimerData>
+    fun timerStartedObservable(): Observable<Int>
+
+    fun setDuration(seconds: Int)
     fun toggleTimer()
     fun stop()
-    fun setDuration(seconds: Int)
     fun snooze(seconds: Int)
     fun getTotalTime(): Int
     fun getTimerDuration(): Int
-    fun getMeditationTime(): Single<Int>
-    fun timerDataStateObservable(): Observable<TimerData>
-    fun timerStartedObservable(): Observable<Int>
 }
 
 enum class TimerState {
@@ -131,6 +131,52 @@ class MeditationTimer : AbstractTimer {
 
     override fun timerDataStateObservable() = timerDataStateObservable
 
+    /**
+     * Stops timer and resets the paused and added time to 0.
+     * Resets the start time to null.
+     * Will not reset the selected duration of the timer!
+     */
+    override fun stop() {
+        resetTimer() // do not change order with following line -> state Subject will emit after Time is set!
+        state = TimerState.STOPPED
+        if (timerRunning()) timerDisposable!!.dispose()
+    }
+
+    override fun toggleTimer() {
+        when (state) {
+            TimerState.RUNNING -> pause()
+            TimerState.COMPLETED -> restart()
+            TimerState.STOPPED -> startTimerFromStoppedState()
+            TimerState.PAUSED -> continueTimer()
+        }
+    }
+
+    /**
+     * Adds a selected amount of time to the total time.
+     * Can only get called from paused, running and completed state
+     * Will not reset the passed time and the selected time.
+     * Let the snoozeSubject emit the remaining seconds
+     * Continues the timer when in completed state
+     */
+    override fun snooze(seconds: Int ) {
+        if (state != TimerState.STOPPED) {
+            addedSeconds += seconds
+//            initTime() TODO emit item when snooze subject emits item!
+            if (state == TimerState.COMPLETED) {
+                continueTimer()
+            }
+            snoozeSubject.onNext(TimerData(state, getSecondsRemaining()))
+        }
+    }
+
+    override fun setDuration(seconds: Int) {
+        selectedSeconds = seconds
+    }
+
+    override fun getTotalTime() = selectedSeconds.plus(addedSeconds)
+
+    override fun getTimerDuration(): Int = selectedSeconds
+
     private fun start() {
         timerStartedSubject.onNext(getSecondsRemaining())
 //        initTime() TODO emit item when state is changed!
@@ -148,7 +194,7 @@ class MeditationTimer : AbstractTimer {
 
     /**
      * starts the pause-period of the timer
-     * sets the start time for pause to current time
+     * sets the pause start time to current time
      */
     private fun pause() {
         Log.i("observables", "pause called")
@@ -184,17 +230,7 @@ class MeditationTimer : AbstractTimer {
     private fun restart() {
         Log.i("observables", "restart called")
         resetTimer()
-        startTime = LocalDateTime.now()
-        start()
-    }
-
-    override fun toggleTimer() {
-        when (state) {
-            TimerState.RUNNING -> pause()
-            TimerState.COMPLETED -> restart()
-            TimerState.STOPPED -> startTimerFromStoppedState()
-            TimerState.PAUSED -> continueTimer()
-        }
+        startTimerFromStoppedState()
     }
 
     private fun getPausedSeconds(): Int {
@@ -204,20 +240,8 @@ class MeditationTimer : AbstractTimer {
         return pausedSeconds
     }
 
-    // Has always to be followed by stop() or continueTimer!
     private fun pauseTimer() {
         pauseStartTime = LocalDateTime.now()
-    }
-
-    /**
-     * Stops timer and resets the paused and added time to 0.
-     * Resets the start time to null.
-     * Will not reset the selected duration of the timer!
-     */
-    override fun stop() {
-        resetTimer() // do not change order with following line -> state Subject will emit after Time is set!
-        state = TimerState.STOPPED
-        if (timerRunning()) timerDisposable!!.dispose()
     }
 
     /**
@@ -229,45 +253,17 @@ class MeditationTimer : AbstractTimer {
         pauseTimer()
     }
 
-    /**
-     * Adds a selected amount of time to the total time.
-     * Can only get called from paused, running and completed state
-     * Will not reset the passed time and the selected time.
-     * Let the snoozeSubject emit the remaining seconds
-     * Continues the timer when in completed state
-     */
-    override fun snooze(seconds: Int) {
-        if (state != TimerState.STOPPED) {
-            addedSeconds += seconds
-//            initTime() TODO emit item when snooze subject emits item!
-            if (state == TimerState.COMPLETED) {
-                continueTimer()
-            }
-            snoozeSubject.onNext(TimerData(state, getSecondsRemaining()))
-        }
-    }
-
-    override fun setDuration(seconds: Int) {
-        selectedSeconds = seconds
-    }
-
-    override fun getTotalTime() = selectedSeconds.plus(addedSeconds)
-
-    private fun getSecondsRemaining(): Int {
-        getPausedSeconds()
-        Log.i("observables", "getSecondsRemaining called, pausedSeconds: ${pausedSeconds}, passed seconds: ${passedSeconds()} totalTime: ${getTotalTime()}, selectedSeconds: $selectedSeconds, addedSeconds: $addedSeconds, start time: $startTime")
-        return getTotalTime().plus(pausedSeconds).minus(passedSeconds())
-    }
-
-    override fun getTimerDuration(): Int = selectedSeconds
-
-    override fun getMeditationTime(): Single<Int> = Single.create { emitter -> emitter.onSuccess(selectedSeconds) }
-
     private fun resetTimer() {
         pausedSeconds = 0
         addedSeconds = 0
         startTime = null
 //        initTime()
+    }
+
+    private fun getSecondsRemaining(): Int {
+        getPausedSeconds()
+        Log.i("observables", "getSecondsRemaining called, pausedSeconds: ${pausedSeconds}, passed seconds: ${passedSeconds()} totalTime: ${getTotalTime()}, selectedSeconds: $selectedSeconds, addedSeconds: $addedSeconds, start time: $startTime")
+        return getTotalTime().plus(pausedSeconds).minus(passedSeconds())
     }
 
 //    private fun initTime() {
