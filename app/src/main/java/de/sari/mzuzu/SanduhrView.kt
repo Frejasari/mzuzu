@@ -16,6 +16,54 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     val anim = TimeAnimator()
     val timeTextView = TextView(context)
 
+    private val bigCircleDiameter by lazy { width.toFloat() }
+    private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
+    private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
+    private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
+    private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2F }
+    private val offsetSmallCircle by lazy {
+        Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
+                (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
+    }
+
+    private var sweepAngle: Float = 260F
+    var totalTime = 100F
+    private var remainingTime = 100F
+
+
+    private val paint = Paint().apply {
+        color = Color.WHITE
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = 10F
+        strokeCap = Paint.Cap.ROUND
+    }
+
+    private val paintSmallCircle = Paint().apply {
+        color = Color.WHITE
+        isAntiAlias = true
+        style = Paint.Style.FILL
+    }
+
+    fun setFillPercentage(percentage: Float) {
+        sweepAngle = percentage * 360F
+        remainingTime = totalTime * percentage
+        timeTextView.text = "${remainingTime.toInt()}"
+        invalidate()
+    }
+
+    fun startAnimation() {
+        anim.setTimeListener { animation, totalTime, deltaTime ->
+            sweepAngle = (sweepAngle + 360F / 1000F * deltaTime * 0.25F) % 360F
+            invalidate()
+        }
+        anim.start()
+    }
+
+    fun stopAnimation() {
+        anim.isPaused
+    }
+
     init {
         setWillNotDraw(false)
         addView(timeTextView)
@@ -25,61 +73,30 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         timeTextView.layoutParams = textViewParams
         timeTextView.text = "Test"
 
-        anim.setTimeListener { animation, totalTime, deltaTime ->
-            sweepAngle = (sweepAngle + 360F / 1000F * deltaTime * 0.25F) % 360F
-            invalidate()
-        }
-        anim.start()
-    }
-
-//    lateinit var path: Path
-//
-//    override fun onSizeChanged(width: Int, height: Int, oldw: Int, oldh: Int) {
-//        super.onSizeChanged(width, height, oldw, oldh)
-//
-//        val centerX = width / 2F
-//        val centerY = height / 2F
-////        path = Path().apply {
-////            addCircle(centerX, centerY, centerX / 2, Path.Direction.CW)
-////        }
-//
-//    }
-
-    val paint = Paint().apply {
-        color = Color.WHITE
-        isAntiAlias = true
-        style = Paint.Style.STROKE
-        strokeWidth = 10F
-        strokeCap = Paint.Cap.ROUND
-    }
-
-    val paintSmallCircle = Paint().apply {
-        color = Color.WHITE
-        isAntiAlias = true
-        style = Paint.Style.FILL
-    }
-
-    private var sweepAngle: Float = 260F
-
-    fun setFillPercentage(percentage: Float) {
-        sweepAngle = percentage * 360F
-        invalidate()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val squareLength = getMinimum(widthMeasureSpec, heightMeasureSpec)
-        super.onMeasure(squareLength, squareLength)
+
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+        val heightSize = MeasureSpec.getSize(heightMeasureSpec)
+
+        val size: Int
+        if (widthMode == MeasureSpec.EXACTLY && widthSize > 0) {
+            size = widthSize
+        } else if (heightMode == MeasureSpec.EXACTLY && heightSize > 0) {
+            size = heightSize
+        } else {
+            size = if (widthSize < heightSize) widthSize else heightSize
+        }
+
+        val finalMeasureSpec = MeasureSpec.makeMeasureSpec(size,MeasureSpec.EXACTLY)
+        super.onMeasure(finalMeasureSpec, finalMeasureSpec)
+//        val squareLength = getMinimum(widthMeasureSpec, heightMeasureSpec)
+//        setMeasuredDimension(squareLength, squareLength)
+//        super.onMeasure(squareLength, squareLength)
     }
-
-
-    val bigCircleDiameter by lazy { width.toFloat() }
-    val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
-    val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
-    val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
-    val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2F }
-    val offsetSmallCircle by lazy { Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
-            (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat() }
-
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)

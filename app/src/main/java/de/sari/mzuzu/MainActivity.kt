@@ -14,6 +14,7 @@ import android.widget.NumberPicker
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
+import java.sql.Time
 
 fun ImageButton.setImageDrawable(id: Int) {
     setImageDrawable(ContextCompat.getDrawable(this.context, id))
@@ -83,6 +84,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
 
     override fun onValueChange(picker: NumberPicker?, oldVal: Int, selectedMinutes: Int) {
         getTimer()?.setDuration(TimeUtils.toSeconds(selectedMinutes))
+        sanduhrView.totalTime = TimeUtils.toSeconds(selectedMinutes).toFloat()
     }
 
     fun getTimer() = binder?.getTimer()
@@ -90,12 +92,20 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     private fun onTimerTick(secondsRemaining: Int) {
         val totalTime = getTimer()!!.getTotalTime()
         timeBar.max = totalTime
+        sanduhrView.setFillPercentage(secondsRemaining / totalTime.toFloat())
         timeBar.progress = secondsRemaining
         timePicker.value = TimeUtils.toMinutes(secondsRemaining)
     }
 
     private fun synchronizeInterface(state: TimerState) {
         Log.i("sync", "synchronizeInterface called, state: $state")
+
+//        with(sanduhrView) {
+//            when (state) {
+//                TimerState.RUNNING -> setFillPercentage(1F)
+//            }
+//        }
+
         with(timeBar) {
             if (state == TimerState.STOPPED) {
                 val timerDuration = getTimer()!!.getTimerDuration()
