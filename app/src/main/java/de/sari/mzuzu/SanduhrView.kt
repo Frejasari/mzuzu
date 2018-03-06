@@ -20,7 +20,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
     private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
     private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
-    private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2F }
+    private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2.5F }
     private val offsetSmallCircle by lazy {
         Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
                 (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
@@ -59,7 +59,6 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 FrameLayout.LayoutParams.WRAP_CONTENT)
         textViewParams.gravity = Gravity.CENTER
         timeTextView.layoutParams = textViewParams
-        timeTextView.text = "Test"
 
     }
 
@@ -71,19 +70,16 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
 
         val size: Int
-        if (widthMode == MeasureSpec.EXACTLY && widthSize > 0) {
-            size = widthSize
+        size = if (widthMode == MeasureSpec.EXACTLY && widthSize > 0) {
+            widthSize
         } else if (heightMode == MeasureSpec.EXACTLY && heightSize > 0) {
-            size = heightSize
+            heightSize
         } else {
-            size = if (widthSize < heightSize) widthSize else heightSize
+            if (widthSize < heightSize) widthSize else heightSize
         }
 
         val finalMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY)
         super.onMeasure(finalMeasureSpec, finalMeasureSpec)
-//        val squareLength = getMinimum(widthMeasureSpec, heightMeasureSpec)
-//        setMeasuredDimension(squareLength, squareLength)
-//        super.onMeasure(squareLength, squareLength)
     }
 
     override fun draw(canvas: Canvas) {
@@ -101,11 +97,6 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     fun getCircleCenterY(angle: Float): Float {
         return (bigCircleRadius - imaginarySmallCircleRadius) * (1 + Math.sin(Math.toRadians(angle.toDouble()))).toFloat() + imaginarySmallCircleRadius
-    }
-
-    fun getMinimum(width: Int, height: Int): Int {
-        return if (width >= height) height
-        else width
     }
 }
 

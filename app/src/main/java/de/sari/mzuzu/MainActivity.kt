@@ -108,6 +108,18 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         if (state == TimerState.RUNNING) anim.start()
         else anim.cancel()
 
+        with(sanduhrView) {
+            if (state == TimerState.COMPLETED) {
+                setFillPercentage(0F)
+                setText("0")
+            }
+            if (state == TimerState.STOPPED) {
+                setFillPercentage(1F)
+                val totalTime = TimeUtils.millisToMinutes(getTimer()!!.getTotalMillis())
+                setText("$totalTime")
+            }
+        }
+
         with(timeBar) {
             if (state == TimerState.STOPPED) {
                 val timerDuration = TimeUtils.millisToSeconds(getTimer()!!.getSelectedMillis())
