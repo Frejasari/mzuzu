@@ -2,7 +2,6 @@ package de.sari.commons
 
 import android.util.Log
 import io.reactivex.Observable
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.Observables
@@ -20,35 +19,38 @@ import java.util.concurrent.TimeUnit
 
 interface AbstractTimer {
     fun stateObservable(): Observable<TimerState>
-    fun timeObservable(): Observable<Int>
+    fun timeObservable(): Observable<Long>
     fun timerDataObservable(): Observable<TimerData>
-    fun timeSelectedObservable(): Observable<Int>
+    fun timeSelectedObservable(): PublishSubject<Long>
     fun snoozeObservable(): Observable<TimerData>
     fun timerDataStateObservable(): Observable<TimerData>
-    fun timerStartedObservable(): Observable<Int>
+    fun timerStartedObservable(): PublishSubject<Long>
 
-    fun setDuration(seconds: Int)
+    fun setDuration(millis: Long)
+    fun setDuration(millis: Int)
     fun toggleTimer()
     fun stop()
-    fun snooze(seconds: Int)
-    fun getTotalTime(): Int
-    fun getTimerDuration(): Int
+    fun snooze(millis: Long)
+    fun snooze(millis: Int)
+    fun getTotalMillis(): Long
+    fun getSelectedMillis(): Long
+    fun getRemainingMillis(): Long
 }
 
 enum class TimerState {
     RUNNING, PAUSED, STOPPED, COMPLETED
 }
 
-data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingSeconds: Int = 0)
+data class TimerData(var state: TimerState = TimerState.STOPPED, var remainingMillis: Long = 0)
 
 
-class MeditationTimer : AbstractTimer {
+class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
 
-    private var addedSeconds: Int = 0
+    private var addedMillis: Long = 0
     private var startTime: LocalDateTime? = null
     private var pauseStartTime: LocalDateTime? = null
-    private var pausedSeconds: Int = 0
-    private var selectedSeconds: Int = 60
+    private var pausedMillis: Long = 0
+    private var selectedMillis: Long = 60000
         set(value) {
             field = value
             Log.i("observables", "timeSelected onNext called, timerState: ${value}")
@@ -61,20 +63,29 @@ class MeditationTimer : AbstractTimer {
             stateSubject.onNext(value)
         }
 
-    private fun passedSeconds() = startTime?.let { Duration.between(startTime, LocalDateTime.now()).seconds.toInt() }
+    private fun passedMillis(): Long = startTime?.let { Duration.between(startTime, LocalDateTime.now()).toMillis() }
             ?: 0
+
+    override fun getRemainingMillis(): Long {
+        Log.i("observables", "getRemainingMillis called, pausedMillis: ${pausedMillis}, passed millis: ${passedMillis()} totalTime: ${getTotalMillis()}, selectedMillis: $selectedMillis, addedMillis: $addedMillis, start time: $startTime")
+        return getTotalMillis().plus(getPausedMillis() / 1000).minus(passedMillis())
+    }
+
+    override fun getTotalMillis() = selectedMillis.plus(addedMillis)
+
+    override fun getSelectedMillis() = selectedMillis
 
     /**
      * Emits the remaining time when the timer is started
      */
-    private val timerStartedSubject: PublishSubject<Int> = PublishSubject.create()
+    private val timerStartedSubject: PublishSubject<Long> = PublishSubject.create()
 
     override fun timerStartedObservable() = timerStartedSubject
 
     /**
      * Emits the selected time when setDuration is called
      */
-    private val timeSelectedObservable: PublishSubject<Int> = PublishSubject.create<Int>()
+    private val timeSelectedObservable: PublishSubject<Long> = PublishSubject.create<Long>()
 
     override fun timeSelectedObservable() = timeSelectedObservable
 
@@ -85,21 +96,22 @@ class MeditationTimer : AbstractTimer {
 
     override fun snoozeObservable() = snoozeSubject
 
-    private val timerObservable = Observable.interval(1, TimeUnit.SECONDS)
+    private val timerObservable = Observable.interval(1, timeUnit)
             .observeOn(AndroidSchedulers.mainThread())
             .filter { state == TimerState.RUNNING }
             .map {
-                Log.i("observables", "timerObservable onNext called, remainingSeconds: ${getSecondsRemaining()}")
-                getSecondsRemaining()
+                Log.i("observables", "timerObservable onNext called, remainingMillis: ${getRemainingMillis()}")
+                getRemainingMillis()
             }
+
     private var timerDisposable: Disposable? = null
 
+    private val timeSubject: BehaviorSubject<Long> = BehaviorSubject.createDefault<Long>(getRemainingMillis())
 
-    private val timeSubject: BehaviorSubject<Int> = BehaviorSubject.createDefault<Int>(getSecondsRemaining())
     /**
-     * Emits the remainingTime when it changes,
+     * Emits the remainingMillis when it changes,
      */
-    override fun timeObservable() = timeSubject.mergeWith(snoozeSubject.map { timerData -> timerData.remainingSeconds })
+    override fun timeObservable() = timeSubject.mergeWith(snoozeSubject.map { timerData -> timerData.remainingMillis })
             .mergeWith(timerStartedSubject).mergeWith(timeSelectedObservable)
 
     /**
@@ -114,7 +126,7 @@ class MeditationTimer : AbstractTimer {
      * Emits TimerData when time or state changes
      */
     private val timerDataObservable = Observables.combineLatest(stateSubject, timeObservable()) { timerState, remainingSeconds ->
-        Log.i("observables", "timerDataObservable onNext called, timerState: $timerState, remainingSeconds: $remainingSeconds")
+        Log.i("observables", "timerDataObservable onNext called, timerState: $timerState, remainingMillis: $remainingSeconds")
         TimerData(timerState, remainingSeconds)
     }
 
@@ -125,7 +137,7 @@ class MeditationTimer : AbstractTimer {
      */
     private val timerDataStateObservable = stateSubject.withLatestFrom(timeObservable())
     { state, remainingSeconds ->
-        Log.i("observables", "timerDataStateObservable onNext called, timerState: $state, remainingSeconds: $remainingSeconds")
+        Log.i("observables", "timerDataStateObservable onNext called, timerState: $state, remainingMillis: $remainingSeconds")
         TimerData(state, remainingSeconds)
     }
 
@@ -155,37 +167,41 @@ class MeditationTimer : AbstractTimer {
      * Adds a selected amount of time to the total time.
      * Can only get called from paused, running and completed state
      * Will not reset the passed time and the selected time.
-     * Let the snoozeSubject emit the remaining seconds
+     * Let the snoozeSubject emit the remaining millis
      * Continues the timer when in completed state
      */
-    override fun snooze(seconds: Int ) {
+    override fun snooze(millis: Long) {
         if (state != TimerState.STOPPED) {
-            addedSeconds += seconds
+            addedMillis += millis
 //            initTime() TODO emit item when snooze subject emits item!
             if (state == TimerState.COMPLETED) {
                 continueTimer()
             }
-            snoozeSubject.onNext(TimerData(state, getSecondsRemaining()))
+            snoozeSubject.onNext(TimerData(state, getRemainingMillis()))
         }
     }
 
-    override fun setDuration(seconds: Int) {
-        selectedSeconds = seconds
+    override fun snooze(millis: Int) {
+        snooze(millis.toLong())
     }
 
-    override fun getTotalTime() = selectedSeconds.plus(addedSeconds)
+    override fun setDuration(millis: Long) {
+        selectedMillis = millis
+    }
 
-    override fun getTimerDuration(): Int = selectedSeconds
+    override fun setDuration(millis: Int) {
+        setDuration(millis.toLong())
+    }
 
     private fun start() {
-        timerStartedSubject.onNext(getSecondsRemaining())
+        timerStartedSubject.onNext(getRemainingMillis())
 //        initTime() TODO emit item when state is changed!
         Log.i("observables", "start called")
 
         state = TimerState.RUNNING
         if (!timerRunning()) {
             timerDisposable = timerObservable.subscribe { remainingSeconds ->
-                Log.i("observables", "timeSubject onNext called, remainingSeconds: ${getSecondsRemaining()}")
+                Log.i("observables", "timeSubject onNext called, remainingMillis: ${getRemainingMillis()}")
                 timeSubject.onNext(remainingSeconds)
                 if (remainingSeconds <= 0) onCompleted()
             }
@@ -208,7 +224,7 @@ class MeditationTimer : AbstractTimer {
      */
     private fun continueTimer() {
         Log.i("observables", "continue called")
-        pausedSeconds += Duration.between(pauseStartTime, LocalDateTime.now()).seconds.toInt()
+        pausedMillis += Duration.between(pauseStartTime, LocalDateTime.now()).seconds.toInt()
         start()
     }
 
@@ -233,11 +249,11 @@ class MeditationTimer : AbstractTimer {
         startTimerFromStoppedState()
     }
 
-    private fun getPausedSeconds(): Int {
+    private fun getPausedMillis(): Long {
         if (state == TimerState.PAUSED || state == TimerState.COMPLETED) {
-            return pausedSeconds + Duration.between(pauseStartTime, LocalDateTime.now()).seconds.toInt()
+            return (pausedMillis + Duration.between(pauseStartTime, LocalDateTime.now()).toMillis().toInt())
         }
-        return pausedSeconds
+        return pausedMillis
     }
 
     private fun pauseTimer() {
@@ -254,22 +270,10 @@ class MeditationTimer : AbstractTimer {
     }
 
     private fun resetTimer() {
-        pausedSeconds = 0
-        addedSeconds = 0
+        pausedMillis = 0
+        addedMillis = 0
         startTime = null
-//        initTime()
     }
-
-    private fun getSecondsRemaining(): Int {
-        getPausedSeconds()
-        Log.i("observables", "getSecondsRemaining called, pausedSeconds: ${pausedSeconds}, passed seconds: ${passedSeconds()} totalTime: ${getTotalTime()}, selectedSeconds: $selectedSeconds, addedSeconds: $addedSeconds, start time: $startTime")
-        return getTotalTime().plus(pausedSeconds).minus(passedSeconds())
-    }
-
-//    private fun initTime() {
-//        Log.i("observables", "initTime timerSubject onNext called, remainingSeconds: ${getSecondsRemaining()}")
-//        timeSubject.onNext(getSecondsRemaining())
-//    }
 
     private fun timerRunning() = timerDisposable != null && !timerDisposable!!.isDisposed
 }

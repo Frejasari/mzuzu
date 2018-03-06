@@ -9,9 +9,9 @@ class StartMusicJob : Job() {
 
     companion object {
         const val TAG = "Start Music Job"
-        fun schedule(seconds: Int) {
+        fun schedule(millis: Long) {
             JobRequest.Builder(TAG)
-                    .setExact(TimeUtils.toMillis(seconds))
+                    .setExact(millis)
                     .setUpdateCurrent(true)
                     .build()
                     .schedule()

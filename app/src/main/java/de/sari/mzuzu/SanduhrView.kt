@@ -27,9 +27,6 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private var sweepAngle: Float = 260F
-    var totalTime = 100F
-    private var remainingTime = 100F
-
 
     private val paint = Paint().apply {
         color = Color.WHITE
@@ -47,21 +44,12 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     fun setFillPercentage(percentage: Float) {
         sweepAngle = percentage * 360F
-        remainingTime = totalTime * percentage
-        timeTextView.text = "${remainingTime.toInt()}"
         invalidate()
     }
 
-    fun startAnimation() {
-        anim.setTimeListener { animation, totalTime, deltaTime ->
-            sweepAngle = (sweepAngle + 360F / 1000F * deltaTime * 0.25F) % 360F
-            invalidate()
-        }
-        anim.start()
-    }
-
-    fun stopAnimation() {
-        anim.isPaused
+    fun setText(text: String) {
+        timeTextView.text = text
+        invalidate()
     }
 
     init {
@@ -91,7 +79,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
             size = if (widthSize < heightSize) widthSize else heightSize
         }
 
-        val finalMeasureSpec = MeasureSpec.makeMeasureSpec(size,MeasureSpec.EXACTLY)
+        val finalMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY)
         super.onMeasure(finalMeasureSpec, finalMeasureSpec)
 //        val squareLength = getMinimum(widthMeasureSpec, heightMeasureSpec)
 //        setMeasuredDimension(squareLength, squareLength)

@@ -8,13 +8,13 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import com.evernote.android.job.JobManager
 import de.sari.commons.AbstractTimer
 import de.sari.commons.MeditationTimer
 import de.sari.commons.TimerData
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
+import java.util.concurrent.TimeUnit
 
 const val NOTIFICATION_ID = 8890
 
@@ -24,7 +24,7 @@ class MeditationTimerService : Service() {
 
     private lateinit var sharedPreferences: SharedPreferences
 
-    private val timer: AbstractTimer = MeditationTimer()
+    private val timer: AbstractTimer = MeditationTimer(TimeUnit.SECONDS)
     private val music by lazy { resources.assets.openFd("music.mp3") }
     private lateinit var mediaPlayer: MeditationMediaPlayer
     private var timerDataDisposable: Disposable? = null
@@ -40,20 +40,22 @@ class MeditationTimerService : Service() {
     override fun onCreate() {
         super.onCreate()
         sharedPreferences = getSharedPreferences(MEDITATION_TIMER_SETTINGS, Context.MODE_PRIVATE)
-        timer.setDuration(sharedPreferences.getInt(MEDITATION_TIME, 300))
+        timer.setDuration(sharedPreferences.getLong(MEDITATION_TIME,        300L))
         mediaPlayer = MeditationMediaPlayer(music)
 
-        timeSelectedDisposable = timer.timeSelectedObservable().subscribe { seconds ->
-            sharedPreferences.edit().putInt(MEDITATION_TIME, seconds).apply()
+        timeSelectedDisposable = timer.timeSelectedObservable().subscribe { millis ->
+            sharedPreferences.edit().putLong(MEDITATION_TIME, millis).apply()
         }
 
-        timerDataDisposable = timer.timerDataObservable().subscribe { timerData ->
-            when (timerData.state) {
-                TimerState.COMPLETED -> mediaPlayer.start()
-                else -> mediaPlayer.pause()
-            }
-            updateNotification(timerData.state, timerData.remainingSeconds)
-        }
+        timerDataDisposable = timer.timerDataObservable()
+                .map { TimerData(it.state, TimeUtils.millisToSeconds(it.remainingMillis).toLong()) }
+                .subscribe { timerData ->
+                    when (timerData.state) {
+                        TimerState.COMPLETED -> mediaPlayer.start()
+                        else -> mediaPlayer.pause()
+                    }
+                    updateNotification(timerData.state, timerData.remainingMillis.toInt())
+                }
 
         scheduleJobDisposable = timer.snoozeObservable().mergeWith(timer.timerDataStateObservable())
                 .subscribe { timerData -> scheduleMusicJob(timerData) }
@@ -84,7 +86,7 @@ class MeditationTimerService : Service() {
     }
 
     private fun updateNotification(state: TimerState, remainingSeconds: Int) {
-        val notification = MeditationNotification.getNotification(state, TimeUtils.toMinutes(remainingSeconds), this, notificationManager)
+        val notification = MeditationNotification.getNotification(state, TimeUtils.secondsToMinutes(remainingSeconds), this, notificationManager)
         if (state == TimerState.STOPPED || state == TimerState.PAUSED) {
             stopForeground(false)
             notificationManager.notify(NOTIFICATION_ID, notification)
@@ -116,7 +118,7 @@ class MeditationTimerService : Service() {
 
     private fun scheduleMusicJob(timerData: TimerData) {
         when (timerData.state) {
-            TimerState.RUNNING -> StartMusicJob.schedule(timerData.remainingSeconds)
+            TimerState.RUNNING -> StartMusicJob.schedule(timerData.remainingMillis)
             else -> JobManager.instance().cancelAllForTag(StartMusicJob.TAG)
         }
     }

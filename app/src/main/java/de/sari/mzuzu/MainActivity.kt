@@ -1,5 +1,6 @@
 package de.sari.mzuzu
 
+import android.animation.TimeAnimator
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
@@ -14,7 +15,6 @@ import android.widget.NumberPicker
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
-import java.sql.Time
 
 fun ImageButton.setImageDrawable(id: Int) {
     setImageDrawable(ContextCompat.getDrawable(this.context, id))
@@ -25,6 +25,7 @@ const val MEDITATION_TIME = "de.sari.mzuzu.meditation.time.exit.com"
 
 class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
 
+    val anim = TimeAnimator()
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
             // We've bound to LocalService, cast the IBinder and get LocalServices instance
             Log.i("sync", "onServiceConnected called")
             binder = iBinder as MeditationTimerService.Binder
-            timeDisposable = getTimer()!!.timeObservable().subscribe { onTimerTick(it) }
+            timeDisposable = getTimer()!!.timeObservable().subscribe { onTimerTick(TimeUtils.millisToSeconds(it)) }
             stateDisposable = getTimer()!!.stateObservable().subscribe { synchronizeInterface(it) }
         }
 
@@ -65,6 +66,12 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         stopButton.setOnClickListener {
             getTimer()?.stop()
         }
+
+        anim.setTimeListener { animation, totalTime, deltaTime ->
+            val percentage: Float = getTimer()?.run { getRemainingMillis().toFloat() / getTotalMillis().toFloat() }
+                    ?: 1F
+            sanduhrView.setFillPercentage(percentage)
+        }
     }
 
     override fun onStart() {
@@ -83,32 +90,27 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     }
 
     override fun onValueChange(picker: NumberPicker?, oldVal: Int, selectedMinutes: Int) {
-        getTimer()?.setDuration(TimeUtils.toSeconds(selectedMinutes))
-        sanduhrView.totalTime = TimeUtils.toSeconds(selectedMinutes).toFloat()
+        getTimer()?.setDuration(TimeUtils.minToMillis(selectedMinutes))
     }
 
     fun getTimer() = binder?.getTimer()
 
     private fun onTimerTick(secondsRemaining: Int) {
-        val totalTime = getTimer()!!.getTotalTime()
+        val totalTime = TimeUtils.millisToSeconds(getTimer()!!.getTotalMillis())
         timeBar.max = totalTime
-        sanduhrView.setFillPercentage(secondsRemaining / totalTime.toFloat())
         timeBar.progress = secondsRemaining
-        timePicker.value = TimeUtils.toMinutes(secondsRemaining)
+        timePicker.value = TimeUtils.secondsToMinutes(secondsRemaining)
+        sanduhrView.setText("${TimeUtils.secondsToMinutes(secondsRemaining)}")
     }
 
     private fun synchronizeInterface(state: TimerState) {
         Log.i("sync", "synchronizeInterface called, state: $state")
-
-//        with(sanduhrView) {
-//            when (state) {
-//                TimerState.RUNNING -> setFillPercentage(1F)
-//            }
-//        }
+        if (state == TimerState.RUNNING) anim.start()
+        else anim.cancel()
 
         with(timeBar) {
             if (state == TimerState.STOPPED) {
-                val timerDuration = getTimer()!!.getTimerDuration()
+                val timerDuration = TimeUtils.millisToSeconds(getTimer()!!.getSelectedMillis())
                 timeBar.progress = timerDuration
                 timeBar.max = timerDuration
             }
@@ -148,10 +150,11 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
                 TimerState.RUNNING -> it.setOnValueChangedListener(null)
                 TimerState.PAUSED -> it.setOnValueChangedListener(null)
                 else -> {
-                    it.value = TimeUtils.toMinutes(getTimer()?.getTimerDuration()!!)
+                    it.value = TimeUtils.millisToMinutes(getTimer()?.getSelectedMillis()!!)
                     it.setOnValueChangedListener(this)
                 }
             }
         }
     }
 }
+
