@@ -1,6 +1,5 @@
 package de.sari.mzuzu
 
-import android.animation.TimeAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -13,34 +12,6 @@ import android.widget.TextView
 class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0)
     : FrameLayout(context, attrs, defStyleAttr) {
 
-    val anim = TimeAnimator()
-    val timeTextView = TextView(context)
-
-    private val bigCircleDiameter by lazy { width.toFloat() }
-    private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
-    private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
-    private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
-    private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2.5F }
-    private val offsetSmallCircle by lazy {
-        Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
-                (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
-    }
-
-    private var sweepAngle: Float = 260F
-
-    private val paint = Paint().apply {
-        color = Color.WHITE
-        isAntiAlias = true
-        style = Paint.Style.STROKE
-        strokeWidth = 10F
-        strokeCap = Paint.Cap.ROUND
-    }
-
-    private val paintSmallCircle = Paint().apply {
-        color = Color.WHITE
-        isAntiAlias = true
-        style = Paint.Style.FILL
-    }
 
     fun setFillPercentage(percentage: Float) {
         sweepAngle = percentage * 360F
@@ -52,6 +23,30 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         invalidate()
     }
 
+    val timeTextView = TextView(context)
+    private val bigCircleDiameter by lazy { width.toFloat() }
+    private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
+    private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
+    private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
+    private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2.5F }
+    private val offsetSmallCircle by lazy {
+        Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
+                (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
+    }
+    private var sweepAngle: Float = 260F
+    private val paint = Paint().apply {
+        color = Color.WHITE
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = 10F
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val paintSmallCircle = Paint().apply {
+        color = Color.WHITE
+        isAntiAlias = true
+        style = Paint.Style.FILL
+    }
+
     init {
         setWillNotDraw(false)
         addView(timeTextView)
@@ -59,7 +54,6 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 FrameLayout.LayoutParams.WRAP_CONTENT)
         textViewParams.gravity = Gravity.CENTER
         timeTextView.layoutParams = textViewParams
-
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -91,18 +85,13 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
 
-    fun getCircleCenterX(angle: Float): Float {
+    private fun getCircleCenterX(angle: Float): Float {
         return (bigCircleRadius - imaginarySmallCircleRadius) * (1 + Math.cos(Math.toRadians(angle.toDouble()))).toFloat() + imaginarySmallCircleRadius
     }
 
-    fun getCircleCenterY(angle: Float): Float {
+    private fun getCircleCenterY(angle: Float): Float {
         return (bigCircleRadius - imaginarySmallCircleRadius) * (1 + Math.sin(Math.toRadians(angle.toDouble()))).toFloat() + imaginarySmallCircleRadius
     }
 }
 
 fun Float.toRadius() = this / 2
-
-fun Canvas.getMinimum(): Float {
-    return if (width >= height) height.toFloat()
-    else width.toFloat()
-}
