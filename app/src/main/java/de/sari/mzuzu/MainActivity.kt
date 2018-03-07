@@ -51,15 +51,11 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        timePicker.maxValue = 120
-        timePicker.minValue = 1
         setSupportActionBar(toolbar)
 
         playButton.setOnClickListener {
             getTimer()!!.toggleTimer()
         }
-
-        timePicker.setOnValueChangedListener(this)
 
         plusButton.setOnClickListener {
             getTimer()?.snooze(resources.getInteger(R.integer.snooze_duration))
@@ -118,7 +114,6 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         val totalTime = TimeUtils.millisToSeconds(getTimer()!!.getTotalMillis())
         timeBar.max = totalTime
         timeBar.progress = secondsRemaining
-        timePicker.value = TimeUtils.secondsToMinutes(secondsRemaining)
         sanduhrView.setText("${TimeUtils.secondsToMinutes(secondsRemaining)}")
     }
 
@@ -178,17 +173,6 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
                 TimerState.PAUSED -> getString(R.string.notification_paused_state)
                 TimerState.STOPPED -> getString(R.string.notification_stopped_state)
                 TimerState.COMPLETED -> getString(R.string.notification_meditate_again)
-            }
-        }
-        timePicker.also {
-            it.isEnabled = (state == TimerState.STOPPED || state == TimerState.COMPLETED)
-            when (state) {
-                TimerState.RUNNING -> it.setOnValueChangedListener(null)
-                TimerState.PAUSED -> it.setOnValueChangedListener(null)
-                else -> {
-                    it.value = TimeUtils.millisToMinutes(getTimer()?.getSelectedMillis()!!)
-                    it.setOnValueChangedListener(this)
-                }
             }
         }
     }
