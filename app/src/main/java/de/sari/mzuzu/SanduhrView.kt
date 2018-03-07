@@ -31,7 +31,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     private var onRotationListener: OnRotationListener? = null
     private val timeTextView = TextView(context)
-    private val bigCircleDiameter by lazy { width.toFloat() }
+    private val bigCircleDiameter by lazy { width.toFloat() - bigCircleStrokeWidth }
     private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
     private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
     private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
@@ -71,8 +71,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        Log.v(TAG, "[Sanduhr] onMeasure w: " + MeasureSpec.toString(widthMeasureSpec))
-        Log.v(TAG, "[Sanduhr] onMeasure h: " + MeasureSpec.toString(heightMeasureSpec))
+//        Log.v(TAG, "[Sanduhr] onMeasure w: " + MeasureSpec.toString(widthMeasureSpec))
+//        Log.v(TAG, "[Sanduhr] onMeasure h: " + MeasureSpec.toString(heightMeasureSpec))
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightMode = MeasureSpec.getMode(heightMeasureSpec)
@@ -93,22 +93,21 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
-        val bigCircleOffset = bigCircleStrokeWidth / 2
-        canvas.drawArc(bigCircleOffset, bigCircleOffset, bigCircleDiameter - bigCircleOffset,
-                bigCircleDiameter - bigCircleOffset,
+        canvas.translate(width / 2F, width / 2F)
+        canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius,
+                bigCircleRadius,
                 -90F, sweepAngle, false, paint)
         canvas.drawCircle(getCircleCenterX(sweepAngle - offsetSmallCircle),
                 getCircleCenterY(sweepAngle - offsetSmallCircle), smallCircleRadius, paintSmallCircle)
+//        canvas.drawArc(0F, 0F, bigCircleDiameter, bigCircleDiameter, 0)
     }
 
     private fun getCircleCenterX(angle: Float): Float {
-        return (bigCircleRadius - imaginarySmallCircleRadius) *
-                (1 + Math.cos(Math.toRadians(angle.toDouble()))).toFloat() + imaginarySmallCircleRadius
+        return (bigCircleRadius - imaginarySmallCircleRadius) * Math.cos(Math.toRadians(angle.toDouble())).toFloat()
     }
 
     private fun getCircleCenterY(angle: Float): Float {
-        return (bigCircleRadius - imaginarySmallCircleRadius) *
-                (1 + Math.sin(Math.toRadians(angle.toDouble()))).toFloat() + imaginarySmallCircleRadius
+        return (bigCircleRadius - imaginarySmallCircleRadius) * Math.sin(Math.toRadians(angle.toDouble())).toFloat()
     }
 
     private var startX = 0F
@@ -124,7 +123,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private val QUADRANT_BOTTOM_RIGHT = 4
 
     override fun onInterceptTouchEvent(event: MotionEvent?): Boolean {
-        Log.i(TAG, "onInterceptTouchEvent called")
+        Log.i(TAG, "onInterceptTouchEvent called. shouldInterceptTouch: $shouldInterceptTouch")
         return when (shouldInterceptTouch) {
             false -> super.onInterceptTouchEvent(event)
         // if false is returned TouchEvent is propagated to ChildView
@@ -146,7 +145,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 touchSweepAngle = sweepAngle
                 startX = event.x
                 startY = event.y
-                return true
+                return shouldInterceptTouch
             }
             MotionEvent.ACTION_MOVE -> {
                 Log.i(TAG, "actionMove called = $sweepAngle")
