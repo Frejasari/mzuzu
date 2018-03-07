@@ -40,7 +40,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
                 (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
     }
-    private val bigCircleStrokeWidth by lazy {10F}
+    private val bigCircleStrokeWidth by lazy { 10F }
     private var sweepAngle: Float = 260F
         set(value) {
             field = if (stopWithFullCircle) {
@@ -115,7 +115,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private var startY = 0F
     private var lastMoveX = 0F
     private var lastMoveY = 0F
-    private val touchSlope = ViewConfiguration.get(this.context).scaledTouchSlop
+    private val touchSlop = ViewConfiguration.get(this.context).scaledTouchSlop
     private var touchSweepAngle = 0F
 
     private val QUADRANT_TOP_LEFT = 1
@@ -155,12 +155,12 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 thisMoveY = event.y
                 distanceX = startX - thisMoveX
                 distanceY = startY - thisMoveY
-                if (Math.abs(distanceX) > touchSlope || Math.abs(distanceY) > touchSlope) {
+                if (Math.abs(distanceX) > touchSlop || Math.abs(distanceY) > touchSlop) {
                     val arc = getRotationArc(lastMoveX, lastMoveY, thisMoveX, thisMoveY)
                     rotateCircles(arc)
                 }
-                lastMoveX = event.x
-                lastMoveY = event.y
+                lastMoveX = thisMoveX
+                lastMoveY = thisMoveY
                 return true
             }
         }
