@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
+    private var firstDisposable: Disposable? = null
     private val serviceConnection = object : ServiceConnection {
         //         onServiceConntected is always called when the activity binds to the service
 //         in comparision onBind is only called the first time a client binds to the service
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
             Log.i("sync", "onServiceConnected called")
             binder = iBinder as MeditationTimerService.Binder
             timeDisposable = getTimer()!!.timeObservable().subscribe { onTimerTick(TimeUtils.millisToSeconds(it)) }
+            firstDisposable = getTimer()!!.timeObservable().firstElement().subscribe { initSanduhr(TimeUtils.millisToSeconds(it)) }
             stateDisposable = getTimer()!!.stateObservable().subscribe { synchronizeInterface(it) }
         }
 
@@ -49,7 +51,6 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         timePicker.maxValue = 120
         timePicker.minValue = 1
         setSupportActionBar(toolbar)
@@ -81,7 +82,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         anim.setTimeListener { animation, totalTime, deltaTime ->
             val percentage: Float = getTimer()?.run { getRemainingMillis().toFloat() / getTotalMillis().toFloat() }
                     ?: 1F
-            sanduhrView.setPercentageOfBigCircel(percentage)
+            sanduhrView.setFillPercentage(percentage)
         }
     }
 
@@ -97,6 +98,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         super.onStop()
         timeDisposable?.dispose()
         stateDisposable?.dispose()
+        firstDisposable?.dispose()
         unbindService(serviceConnection)
     }
 
@@ -106,7 +108,13 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
 
     fun getTimer() = binder?.getTimer()
 
+    private fun initSanduhr(secondsRemaining: Int) {
+        val totalTime = TimeUtils.millisToSeconds(getTimer()!!.getTotalMillis())
+        sanduhrView.setPercentageOfBigCircel(totalTime.toFloat() / (resources.getInteger(R.integer.timer_maximum_in_minutes).toFloat() * 60))
+    }
+
     private fun onTimerTick(secondsRemaining: Int) {
+
         val totalTime = TimeUtils.millisToSeconds(getTimer()!!.getTotalMillis())
         timeBar.max = totalTime
         timeBar.progress = secondsRemaining
@@ -122,12 +130,12 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         with(sanduhrView) {
             shouldInterceptTouch = when (state) {
                 TimerState.COMPLETED -> {
-                    setPercentageOfBigCircel(0F)
+                    setFillPercentage(0F)
                     setText("0")
                     true
                 }
                 TimerState.STOPPED -> {
-                    setPercentageOfBigCircel(1F)
+                    setFillPercentage(0F)
                     val totalTime = TimeUtils.millisToMinutes(getTimer()!!.getTotalMillis())
                     setText("$totalTime")
                     true
