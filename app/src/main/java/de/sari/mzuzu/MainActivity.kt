@@ -15,6 +15,7 @@ import android.widget.NumberPicker
 import de.sari.commons.TimerState
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlin.math.roundToInt
 
 fun ImageButton.setImageDrawable(id: Int) {
     setImageDrawable(ContextCompat.getDrawable(this.context, id))
@@ -24,7 +25,7 @@ const val MEDITATION_TIMER_SETTINGS = "de.sari.mzuzu.meditation.timer.settings.e
 const val MEDITATION_TIME = "de.sari.mzuzu.meditation.time.exit.com"
 
 class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
-
+    var selectedMinutes = 0
     val anim = TimeAnimator()
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
@@ -66,6 +67,16 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         stopButton.setOnClickListener {
             getTimer()?.stop()
         }
+        sanduhrView.stopWithFullCircle = true
+        sanduhrView.setRotationListener(object : SanduhrView.OnRotationListener {
+            override fun onRotation(arc: Float) {
+                val newSelectedMinutes: Int = resources.getInteger(R.integer.timer_maximum_in_minutes) * arc.roundToInt() / 360
+                if (newSelectedMinutes != selectedMinutes) {
+                    getTimer()?.setDuration(TimeUtils.minToMillis(selectedMinutes))
+                    selectedMinutes = newSelectedMinutes
+                }
+            }
+        })
 
         anim.setTimeListener { animation, totalTime, deltaTime ->
             val percentage: Float = getTimer()?.run { getRemainingMillis().toFloat() / getTotalMillis().toFloat() }
@@ -109,14 +120,19 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         else anim.cancel()
 
         with(sanduhrView) {
-            if (state == TimerState.COMPLETED) {
-                setFillPercentage(0F)
-                setText("0")
-            }
-            if (state == TimerState.STOPPED) {
-                setFillPercentage(1F)
-                val totalTime = TimeUtils.millisToMinutes(getTimer()!!.getTotalMillis())
-                setText("$totalTime")
+            shouldInterceptTouch = when (state) {
+                TimerState.COMPLETED -> {
+                    setFillPercentage(0F)
+                    setText("0")
+                    true
+                }
+                TimerState.STOPPED -> {
+                    setFillPercentage(1F)
+                    val totalTime = TimeUtils.millisToMinutes(getTimer()!!.getTotalMillis())
+                    setText("$totalTime")
+                    true
+                }
+                else -> false
             }
         }
 

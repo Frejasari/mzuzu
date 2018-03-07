@@ -40,7 +40,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
                 (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
     }
-    private val bigCircleStrokeWidth = 10F
+    private val bigCircleStrokeWidth by lazy {10F}
     private var sweepAngle: Float = 260F
         set(value) {
             field = if (stopWithFullCircle) {
@@ -163,8 +163,6 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 lastMoveY = event.y
                 return true
             }
-//            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> touchSweepAngle = sweepAngle
-
         }
         return super.onTouchEvent(event)
     }
