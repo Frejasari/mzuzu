@@ -67,7 +67,6 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
             ?: 0
 
     override fun getRemainingMillis(): Long {
-        Log.i("observables", "getRemainingMillis called, pausedMillis: ${pausedMillis}, passed millis: ${passedMillis()} totalTime: ${getTotalMillis()}, selectedMillis: $selectedMillis, addedMillis: $addedMillis, start time: $startTime")
         return getTotalMillis().plus(getPausedMillis() / 1000).minus(passedMillis())
     }
 
@@ -155,6 +154,7 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
     }
 
     override fun toggleTimer() {
+        Log.i("observables", "toggleTimer: $state, remainingMillis: ${getRemainingMillis()}")
         when (state) {
             TimerState.RUNNING -> pause()
             TimerState.COMPLETED -> restart()
@@ -224,7 +224,9 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
      */
     private fun continueTimer() {
         Log.i("observables", "continue called")
-        pausedMillis += Duration.between(pauseStartTime, LocalDateTime.now()).seconds.toInt()
+        pausedMillis += Duration.between(pauseStartTime, LocalDateTime.now()).toMillis()
+        Log.i("observables", "continue called, paused millis : $pausedMillis, remainingMillis: ${getRemainingMillis()}")
+
         start()
     }
 
