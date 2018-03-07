@@ -17,6 +17,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     val TAG = "Sanduhr"
 
     var shouldInterceptTouch = true
+    var stopWithFullCircle = true
 
     fun setFillPercentage(percentage: Float) {
         sweepAngle = percentage * 360F
@@ -42,7 +43,10 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private val bigCircleStrokeWidth = 10F
     private var sweepAngle: Float = 260F
         set(value) {
-            field = value % 360
+            field = if (stopWithFullCircle) {
+                if (value > 0) Math.min(value, 360F)
+                else 0F
+            } else value % 360
         }
     private val paint = Paint().apply {
         color = Color.WHITE
@@ -112,6 +116,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private var lastMoveX = 0F
     private var lastMoveY = 0F
     private val touchSlope = ViewConfiguration.get(this.context).scaledTouchSlop
+    private var touchSweepAngle = 0F
 
     private val QUADRANT_TOP_LEFT = 1
     private val QUADRANT_TOP_RIGHT = 2
@@ -138,6 +143,7 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
         when (action) {
             MotionEvent.ACTION_DOWN -> {
+                touchSweepAngle = sweepAngle
                 startX = event.x
                 startY = event.y
                 return true
@@ -157,6 +163,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 lastMoveY = event.y
                 return true
             }
+//            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> touchSweepAngle = sweepAngle
+
         }
         return super.onTouchEvent(event)
     }
@@ -175,7 +183,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     }
 
     private fun rotateCircles(arc: Float) {
-        sweepAngle -= arc
+        touchSweepAngle -= arc
+        sweepAngle = touchSweepAngle
         onRotationListener?.onRotation(sweepAngle)
         Log.i(TAG, "rotateCircles called sweepAngle = $sweepAngle")
         invalidate()
