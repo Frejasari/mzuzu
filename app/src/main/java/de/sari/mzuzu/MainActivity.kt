@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         anim.setTimeListener { animation, totalTime, deltaTime ->
             val percentage: Float = getTimer()?.run { getRemainingMillis().toFloat() / getTotalMillis().toFloat() }
                     ?: 1F
-            sanduhrView.setFillPercentage(percentage)
+            sanduhrView.setPercentageOfBigCircel(percentage)
         }
     }
 
@@ -122,12 +122,12 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         with(sanduhrView) {
             shouldInterceptTouch = when (state) {
                 TimerState.COMPLETED -> {
-                    setFillPercentage(0F)
+                    setPercentageOfBigCircel(0F)
                     setText("0")
                     true
                 }
                 TimerState.STOPPED -> {
-                    setFillPercentage(1F)
+                    setPercentageOfBigCircel(1F)
                     val totalTime = TimeUtils.millisToMinutes(getTimer()!!.getTotalMillis())
                     setText("$totalTime")
                     true

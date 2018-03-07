@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
@@ -19,13 +20,18 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     var shouldInterceptTouch = true
     var stopWithFullCircle = true
 
-    fun setFillPercentage(percentage: Float) {
+    fun setPercentageOfBigCircel(percentage: Float) {
         sweepAngle = percentage * 360F
         invalidate()
     }
 
+    fun setFillPercentage(percentage: Float) {
+        fillPercentageOfBigCircle = percentage
+        invalidate()
+    }
+
     fun setText(text: String) {
-        timeTextView.text = text
+        this.textViewText = text
         invalidate()
     }
 
@@ -48,6 +54,13 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
                 else 0F
             } else value % 360
         }
+    private var fillPercentageOfBigCircle = 0.7F
+        set(value) {
+            if (value >= 1) field = 1F
+            field = if (value <= 0) 0F
+            else value
+        }
+    private var textViewText = ""
     private val paint = Paint().apply {
         color = Color.WHITE
         isAntiAlias = true
@@ -61,18 +74,35 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         style = Paint.Style.FILL
     }
 
+    private val paintFillCircle = Paint().apply {
+        color = ContextCompat.getColor(context, R.color.colorAccent)
+        style = Paint.Style.FILL
+        alpha = 100
+    }
+    private val fontSize = 70F
+    private val paintText = Paint().apply {
+        color = ContextCompat.getColor(context, R.color.colorAccentPrimary)
+        isAntiAlias = true
+        strokeWidth = 2F
+        strokeJoin = Paint.Join.ROUND
+        strokeCap = Paint.Cap.ROUND
+        style = Paint.Style.FILL_AND_STROKE
+        textSize = fontSize
+        textAlign = Paint.Align.CENTER
+        // TODO  And change the color / style
+    }
+
     init {
         setWillNotDraw(false)
-        addView(timeTextView)
+        addView(timeTextView) // TODO Remove View or get to know how to bring it in front of the filling circle
         val textViewParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT)
         textViewParams.gravity = Gravity.CENTER
         timeTextView.layoutParams = textViewParams
+        timeTextView.translationZ = 1F
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-//        Log.v(TAG, "[Sanduhr] onMeasure w: " + MeasureSpec.toString(widthMeasureSpec))
-//        Log.v(TAG, "[Sanduhr] onMeasure h: " + MeasureSpec.toString(heightMeasureSpec))
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
         val heightMode = MeasureSpec.getMode(heightMeasureSpec)
@@ -94,12 +124,16 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
         canvas.translate(width / 2F, width / 2F)
-        canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius,
-                bigCircleRadius,
+        canvas.save()
+//        defines new drawing area - everything outside of this area will not draw
+        canvas.clipRect(-bigCircleRadius, (bigCircleRadius - fillPercentageOfBigCircle * bigCircleDiameter), bigCircleRadius, bigCircleRadius)
+        canvas.drawCircle(0F, 0F, bigCircleRadius, paintFillCircle)
+        canvas.restore()
+        canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius, bigCircleRadius,
                 -90F, sweepAngle, false, paint)
         canvas.drawCircle(getCircleCenterX(sweepAngle - offsetSmallCircle),
                 getCircleCenterY(sweepAngle - offsetSmallCircle), smallCircleRadius, paintSmallCircle)
-//        canvas.drawArc(0F, 0F, bigCircleDiameter, bigCircleDiameter, 0)
+        canvas.drawText(textViewText, 0F, fontSize / 2, paintText)
     }
 
     private fun getCircleCenterX(angle: Float): Float {
