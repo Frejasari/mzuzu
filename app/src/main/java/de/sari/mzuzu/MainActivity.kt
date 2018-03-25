@@ -25,14 +25,14 @@ const val MEDITATION_TIMER_SETTINGS = "de.sari.mzuzu.meditation.timer.settings.e
 const val MEDITATION_TIME = "de.sari.mzuzu.meditation.time.exit.com"
 
 class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
-    var selectedMinutes = 0
+    var selectedMinutes = 5
     val anim = TimeAnimator()
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
     private var firstDisposable: Disposable? = null
     private val serviceConnection = object : ServiceConnection {
-        //         onServiceConntected is always called when the activity binds to the service
+        //         onServiceConnected is always called when the activity binds to the service
 //         in comparision onBind is only called the first time a client binds to the service
 //          - the service connection channel is cached and the system returns the same binder to any further clients
         override fun onServiceConnected(className: ComponentName, iBinder: IBinder) {
@@ -69,8 +69,8 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
             override fun onRotation(arc: Float) {
                 val newSelectedMinutes: Int = resources.getInteger(R.integer.timer_maximum_in_minutes) * arc.roundToInt() / 360
                 if (newSelectedMinutes != selectedMinutes) {
-                    getTimer()?.setDuration(TimeUtils.minToMillis(selectedMinutes))
                     selectedMinutes = newSelectedMinutes
+                    getTimer()?.setDuration(TimeUtils.minToMillis(selectedMinutes))
                 }
             }
         })
