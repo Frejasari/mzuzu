@@ -26,7 +26,7 @@ const val MEDITATION_TIME = "de.sari.mzuzu.meditation.time.exit.com"
 
 class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
     var selectedMinutes = 5
-    val anim = TimeAnimator()
+    private val anim = TimeAnimator()
     var binder: MeditationTimerService.Binder? = null
     private var timeDisposable: Disposable? = null
     private var stateDisposable: Disposable? = null
