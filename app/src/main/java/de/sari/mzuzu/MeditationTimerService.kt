@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.IBinder
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import com.evernote.android.job.JobManager
 import de.sari.commons.AbstractTimer
 import de.sari.commons.MeditationTimer
@@ -40,7 +41,7 @@ class MeditationTimerService : Service() {
     override fun onCreate() {
         super.onCreate()
         sharedPreferences = getSharedPreferences(MEDITATION_TIMER_SETTINGS, Context.MODE_PRIVATE)
-        timer.setDuration(sharedPreferences.getLong(MEDITATION_TIME,        300L))
+        timer.setDuration(sharedPreferences.getLong(MEDITATION_TIME, 300L))
         mediaPlayer = MeditationMediaPlayer(music)
 
         timeSelectedDisposable = timer.timeSelectedObservable().subscribe { millis ->
@@ -51,14 +52,18 @@ class MeditationTimerService : Service() {
                 .map { TimerData(it.state, TimeUtils.millisToSeconds(it.remainingMillis).toLong()) }
                 .subscribe { timerData ->
                     when (timerData.state) {
-                        TimerState.COMPLETED -> mediaPlayer.start()
+                        TimerState.COMPLETED -> if (!mediaPlayer.isPlaying) mediaPlayer.start()
                         else -> mediaPlayer.pause()
                     }
                     updateNotification(timerData.state, timerData.remainingMillis.toInt())
                 }
 
         scheduleJobDisposable = timer.snoozeObservable().mergeWith(timer.timerDataStateObservable())
-                .subscribe { timerData -> scheduleMusicJob(timerData) }
+                .subscribe { timerData ->
+                    Log.i("JobSchedule", "remainingMillis: ${timerData.remainingMillis}, state: ${timerData.state}")
+
+                    scheduleMusicJob(timerData)
+                }
     }
 
     // A client is binding to the service with bindService()
@@ -117,6 +122,7 @@ class MeditationTimerService : Service() {
     }
 
     private fun scheduleMusicJob(timerData: TimerData) {
+        Log.i("JobSchedule", "remainingMillis: ${timerData.remainingMillis}")
         when (timerData.state) {
             TimerState.RUNNING -> StartMusicJob.schedule(timerData.remainingMillis)
             else -> JobManager.instance().cancelAllForTag(StartMusicJob.TAG)
