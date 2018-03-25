@@ -69,7 +69,7 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
     override fun getRemainingMillis(): Long {
         val pause = getPausedMillis()
         rem = getTotalMillis().plus(pause).minus(passedMillis())
-        Log.i("SanduhrDebug", "getRemainingMillis(), total sec: ${getTotalMillis()/60}, paused sec ${pause/60}, passed sec ${passedMillis()/60}, remaining time: ${rem/60}")
+        Log.i("SanduhrDebug", "getRemainingMillis(), total sec: ${getTotalMillis() / 60}, paused sec ${pause / 60}, passed sec ${passedMillis() / 60}, remaining time: ${rem / 60}")
         return rem
     }
 
@@ -176,7 +176,6 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
     override fun snooze(millis: Long) {
         if (state != TimerState.STOPPED) {
             addedMillis += millis
-//            initTime() TODO emit item when snooze subject emits item!
             if (state == TimerState.COMPLETED) {
                 continueTimer()
             }
@@ -197,9 +196,8 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
     }
 
     private fun start() {
-        state = TimerState.RUNNING
         timerStartedSubject.onNext(getRemainingMillis())
-
+        state = TimerState.RUNNING
         if (!timerRunning()) {
             timerDisposable = timerObservable.subscribe { remainingSeconds ->
                 Log.i("observables", "timeSubject onNext called, remainingMillis: ${getRemainingMillis()}")
@@ -224,9 +222,9 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
      * sets paused seconds with start time and current time
      */
     private fun continueTimer() {
-        Log.i("SanduhrDebug", "continue called, paused sec : ${pausedMillis/60}, remaining sec: ${getRemainingMillis()/60}")
+        Log.i("SanduhrDebug", "continue called, paused sec : ${pausedMillis / 60}, remaining sec: ${getRemainingMillis() / 60}")
         pausedMillis += Duration.between(pauseStartTime, LocalDateTime.now()).toMillis()
-        Log.i("SanduhrDebug", "continue called, paused sec : ${pausedMillis/60}, remAining sec: ${getRemainingMillis()/60}")
+        Log.i("SanduhrDebug", "continue called, paused sec : ${pausedMillis / 60}, remAining sec: ${getRemainingMillis() / 60}")
         start()
     }
 
@@ -235,7 +233,7 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
      * and starts the timer from an already clean state
      */
     private fun startTimerFromStoppedState() {
-        Log.i("observables", "startTimerFromStoppedState called")
+        Log.i("JobSchedule", "startTimerFromStoppedState called: selectedMillis: $selectedMillis")
         startTime = LocalDateTime.now()
         start()
     }
@@ -254,7 +252,7 @@ class MeditationTimer(timeUnit: TimeUnit) : AbstractTimer {
     private fun getPausedMillis(): Long {
         if (state == TimerState.PAUSED || state == TimerState.COMPLETED) {
             var pMillis = pausedMillis + Duration.between(pauseStartTime, LocalDateTime.now()).toMillis().toInt()
-            Log.i("SanduhrDebug", "gePausedMillis() called, state pause or completed - paused seconds: ${pMillis/60}")
+            Log.i("SanduhrDebug", "gePausedMillis() called, state pause or completed - paused seconds: ${pMillis / 60}")
             return (pMillis)
         }
         return pausedMillis
