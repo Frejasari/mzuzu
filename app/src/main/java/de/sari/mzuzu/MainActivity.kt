@@ -64,10 +64,10 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
         stopButton.setOnClickListener {
             getTimer()?.stop()
         }
-        sanduhrView.stopWithFullCircle = true
+        sanduhrView.stopWithFullCircle = false
         sanduhrView.setRotationListener(object : SanduhrView.OnRotationListener {
             override fun onRotation(arc: Float) {
-                val newSelectedMinutes: Int = resources.getInteger(R.integer.timer_maximum_in_minutes) * arc.roundToInt() / 360
+                val newSelectedMinutes: Int = Math.max(resources.getInteger(R.integer.timer_maximum_in_minutes) * arc.roundToInt() / 360, 1)
                 if (newSelectedMinutes != selectedMinutes) {
                     selectedMinutes = newSelectedMinutes
                     getTimer()?.setDuration(TimeUtils.minToMillis(selectedMinutes))
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity(), NumberPicker.OnValueChangeListener {
 
     private fun initSanduhr(secondsRemaining: Int) {
         val totalTime = TimeUtils.millisToSeconds(getTimer()!!.getTotalMillis())
-        sanduhrView.setPercentageOfBigCircel(totalTime.toFloat() / (resources.getInteger(R.integer.timer_maximum_in_minutes).toFloat() * 60))
+        sanduhrView.setPercentageOfBigCircle(totalTime.toFloat() / (resources.getInteger(R.integer.timer_maximum_in_minutes).toFloat() * 60))
     }
 
     private fun onTimerTick(secondsRemaining: Int) {

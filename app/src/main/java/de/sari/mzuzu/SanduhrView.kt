@@ -18,9 +18,9 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     val TAG = "Sanduhr"
 
     var shouldInterceptTouch = true
-    var stopWithFullCircle = true
+    var stopWithFullCircle = false
 
-    fun setPercentageOfBigCircel(percentage: Float) {
+    fun setPercentageOfBigCircle(percentage: Float) {
         sweepAngle = percentage * 360F
         invalidate()
     }
@@ -39,8 +39,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
     private val timeTextView = TextView(context)
     private val fullCircleDiameter by lazy { width.toFloat() - bigCircleStrokeWidth }
     private val fullCircleRadius by lazy { fullCircleDiameter.toRadius() }
-    private val bigCircleRadius by lazy { bigCircleDiameter /2}
-    private val bigCircleDiameter by lazy { (fullCircleDiameter * 0.95).toFloat()}
+    private val bigCircleRadius by lazy { bigCircleDiameter / 2 }
+    private val bigCircleDiameter by lazy { (fullCircleDiameter).toFloat() }
     private val smallCircleDiameter by lazy { fullCircleDiameter / 27 }
     private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
     private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2.5F }
@@ -54,7 +54,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
             field = if (stopWithFullCircle) {
                 if (value > 0) Math.min(value, 360F)
                 else 0F
-            } else value % 360
+            } else if (value > 0) value
+            else 0F
         }
     private var fillPercentageOfBigCircle = 0.7F
         set(value) {
@@ -141,8 +142,8 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         canvas.drawCircle(0F, 0F, fullCircleRadius, paintFillCircle)
         canvas.restore()
         canvas.drawCircle(0F, 0F, fullCircleRadius, paintFullCircle)
-        canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius, bigCircleRadius,
-                -90F, sweepAngle, false, paint)
+//        canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius, bigCircleRadius,
+//                -90F, sweepAngle, false, paint)
         canvas.drawCircle(getCircleCenterX(sweepAngle - offsetSmallCircle),
                 getCircleCenterY(sweepAngle - offsetSmallCircle), smallCircleRadius, paintSmallCircle)
         canvas.drawText(textViewText, 0F, fontSize / 2, paintText)
