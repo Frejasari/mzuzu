@@ -37,14 +37,16 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
     private var onRotationListener: OnRotationListener? = null
     private val timeTextView = TextView(context)
-    private val bigCircleDiameter by lazy { width.toFloat() - bigCircleStrokeWidth }
-    private val bigCircleRadius by lazy { bigCircleDiameter.toRadius() }
-    private val smallCircleDiameter by lazy { bigCircleDiameter / 27 }
+    private val fullCircleDiameter by lazy { width.toFloat() - bigCircleStrokeWidth }
+    private val fullCircleRadius by lazy { fullCircleDiameter.toRadius() }
+    private val bigCircleRadius by lazy { bigCircleDiameter /2}
+    private val bigCircleDiameter by lazy { (fullCircleDiameter * 0.95).toFloat()}
+    private val smallCircleDiameter by lazy { fullCircleDiameter / 27 }
     private val smallCircleRadius by lazy { smallCircleDiameter.toRadius() }
     private val imaginarySmallCircleRadius by lazy { smallCircleRadius * 2.5F }
     private val offsetSmallCircle by lazy {
         Math.toDegrees(Math.acos(-((smallCircleRadius * smallCircleRadius) /
-                (2 * bigCircleRadius * bigCircleRadius)).toDouble())).toFloat()
+                (2 * fullCircleRadius * fullCircleRadius)).toDouble())).toFloat()
     }
     private val bigCircleStrokeWidth by lazy { 10F }
     private var sweepAngle: Float = 260F
@@ -68,6 +70,15 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         strokeWidth = bigCircleStrokeWidth
         strokeCap = Paint.Cap.ROUND
     }
+
+    private val paintFullCircle = Paint().apply {
+        color = ContextCompat.getColor(context, R.color.colorAccent)
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = bigCircleStrokeWidth
+        strokeCap = Paint.Cap.ROUND
+    }
+
     private val paintSmallCircle = Paint().apply {
         color = Color.WHITE
         isAntiAlias = true
@@ -126,9 +137,10 @@ class SanduhrView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         canvas.translate(width / 2F, width / 2F)
         canvas.save()
 //        defines new drawing area - everything outside of this area will not draw
-        canvas.clipRect(-bigCircleRadius, (bigCircleRadius - fillPercentageOfBigCircle * bigCircleDiameter), bigCircleRadius, bigCircleRadius)
-        canvas.drawCircle(0F, 0F, bigCircleRadius, paintFillCircle)
+        canvas.clipRect(-fullCircleRadius, (fullCircleRadius - fillPercentageOfBigCircle * fullCircleDiameter), fullCircleRadius, fullCircleRadius)
+        canvas.drawCircle(0F, 0F, fullCircleRadius, paintFillCircle)
         canvas.restore()
+        canvas.drawCircle(0F, 0F, fullCircleRadius, paintFullCircle)
         canvas.drawArc(-bigCircleRadius, -bigCircleRadius, bigCircleRadius, bigCircleRadius,
                 -90F, sweepAngle, false, paint)
         canvas.drawCircle(getCircleCenterX(sweepAngle - offsetSmallCircle),
